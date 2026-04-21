@@ -18,13 +18,32 @@ class Parser:
                 break
             self._keywords.append(arg)
 
+
         valid: None | Command = None
+        valid_len = -1
+
         for cmd in self._commands:
-            if list(cmd.parts) == self._keywords:
-                valid = cmd
+            parts = list(cmd.parts)
+            if self._keywords[:len(parts)] == parts:
+                if len(parts) > valid_len:
+                    valid = cmd
+                    valid_len = len(parts)
+
+
 
         if valid is None:
             raise Exception
+        
+        
+        fx = self._keywords[valid_len:]
+        new = []
+        for i, val in enumerate(fx):
+            
+            new.append(f"--{valid.arguments[i].name}={val}")
+
+        self._options = new + self._options
+
+        
         self._options_tuple: dict[str, Any] = self._process_options(self._options, valid)
         return Result(
             valid,self._options_tuple
@@ -43,12 +62,19 @@ class Parser:
         pairs = []
         arg_name: str = ""
         arg_value: str = ""
+        _current_legit_arg = 0
+        
+        #attempt to recover the args if they're at the staert
 
         for i, _o in enumerate(opt):
             arg_name = _o
             flag = False
+
             if not _o.startswith("--"):
+                #pairs.append((command.arguments[_current_legit_arg].name, _o))
+                _current_legit_arg += 1
                 continue
+
             if _o.startswith("--") and not "=" in _o:
                 if len(opt)-1 == i:
                     arg_name = _o
@@ -81,7 +107,8 @@ class Parser:
             if not arg.name in n:
                 if arg.default is not _empty:
                     n[arg.name] = arg.default
-        
+                elif arg.flag:
+                    n[arg.name] = False
         return n
     
     @cached_property
