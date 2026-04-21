@@ -13,6 +13,7 @@ class CommandManager:
         self.name = name
         self._command_tree = {}
         self._tmp_cmds: list[flag.Command] = []
+        self._real_cmds: list[Command] = []
         
         pass
 
@@ -24,16 +25,24 @@ class CommandManager:
             self._tmp_cmds.append(
                 flag.Command(parts=tuple(commands))
             )
+            self._real_cmds.append(
+                Command(func, list(commands), author=author)
+            )
             @wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 return func(*args, **kwargs)
             return wrapper
         return decorator
 
-    def process(self, args: list[str] | None = None):
+    def process(self, args: list[str] | None = None) :
         if args is None:
             args = sys.argv
 
         self._main_parser = _class.Parser(args)
         self._main_parser.add(self._tmp_cmds)
-        self._main_parser.process()
+        opt = self._main_parser.process()
+        
+        #look for command
+        for command in self._real_cmds:
+            if tuple(command.chain) == opt.cmd.parts:
+                command.function()

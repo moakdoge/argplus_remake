@@ -2,13 +2,13 @@ from functools import cached_property
 import sys
 from typing import Any
 
-from .flag import Command, Argument
+from .flag import Command, Argument, Result
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
         self._raw_args = args
         self._commands: set[Command] = set()
 
-    def process(self) -> list[tuple[str, Any]]:
+    def process(self) -> Result:
         args = self._raw_args
         self._keywords = []
         self._options = []
@@ -26,7 +26,9 @@ class Parser:
         if valid is None:
             raise Exception
         self._options_tuple: list[tuple[str, Any]] = self._process_options(self._options, valid)
-        return self._options_tuple
+        return Result(
+            valid,self._options_tuple
+        )
     
     def add(self, *commands: Command | list[Command] | tuple[Command] | set[Command]):
         for command in commands:

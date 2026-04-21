@@ -34,3 +34,9 @@ class Command:
     parts: tuple[str, ...]
     aliases: tuple[str, ...] = () # type: ignore
     arguments: tuple[Argument, ...] = () # type: ignore
+
+
+@dataclass(frozen=True, slots=True)
+class Result:
+    cmd: Command
+    args: list[tuple[str, Any]]
