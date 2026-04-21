@@ -6,6 +6,10 @@ from .flag import Command, Argument
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
         self._raw_args = args
+        self._commands: set[Command] = set()
+
+    def process(self) -> list[tuple[str, Any]]:
+        args = self._raw_args
         self._keywords = []
         self._options = []
         for i, arg in enumerate(args[1:]):
@@ -14,19 +18,24 @@ class Parser:
                 break
             self._keywords.append(arg)
 
-        self._commands: list[Command] = [
-            Command(["example", "one"], arguments=[
-                Argument("x", flag=True)
-            ])
-        ]
         valid: None | Command = None
         for cmd in self._commands:
-            if cmd.parts == self._keywords:
+            if list(cmd.parts) == self._keywords:
                 valid = cmd
 
         if valid is None:
             raise Exception
         self._options_tuple: list[tuple[str, Any]] = self._process_options(self._options, valid)
+        return self._options_tuple
+    
+    def add(self, *commands: Command | list[Command] | tuple[Command] | set[Command]):
+        for command in commands:
+            if isinstance(command, (list, tuple, set)):
+                for cmd in command:
+                    self._commands.add(cmd)
+            else:
+                self._commands.add(command)
+
 
     def _process_options(self, opt: list[str], command: Command) -> list[tuple[str, Any]]:
         pairs = []
@@ -57,7 +66,7 @@ class Parser:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
                     if _arg.flag is False and flag is True:
                         raise ValueError("Must be marked as flag!")
-                    pairs.append((arg_name, arg_value))
+                    pairs.append((arg_name, _arg._convert_type(arg_value)))
                     _valid = True
 
             if not _valid:
@@ -68,6 +77,7 @@ class Parser:
     def caller(self):
         return self._raw_args[0]
     
-    @cached_property
+    @property
     def commands(self):
-        return self._keywords
+        return self._commands
+    

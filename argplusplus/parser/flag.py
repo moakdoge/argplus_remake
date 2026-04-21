@@ -2,10 +2,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, unsafe_hash=True)
 class Argument:
     name: str = ""
-    aliases: list[str] = field(default_factory=list)
+    aliases: tuple[str] = ()
     flag: bool = False
     tp: type = type[Any]
     def _convert_type(self, value: str):
@@ -28,8 +28,8 @@ class Argument:
                 pass 
         raise ValueError
 
-@dataclass(slots=True)
+@dataclass(slots=True, unsafe_hash=True)
 class Command:
-    parts: list[str]
-    aliases: list[str] = field(default_factory=list)
-    arguments: list[Argument] = field(default_factory=list)
+    parts: tuple[str]
+    aliases: tuple[str] = ()
+    arguments: tuple[Argument] = ()
