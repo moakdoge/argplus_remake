@@ -16,7 +16,7 @@ class Parser:
 
         self._commands: list[Command] = [
             Command(["example", "one"], arguments=[
-                Argument("x")
+                Argument("x", flag=True)
             ])
         ]
         valid: None | Command = None
@@ -28,32 +28,35 @@ class Parser:
             raise Exception
         self._options_tuple: list[tuple[str, Any]] = self._process_options(self._options, valid)
 
-
     def _process_options(self, opt: list[str], command: Command) -> list[tuple[str, Any]]:
         pairs = []
         arg_name: str = ""
         arg_value: str = ""
 
         for i, _o in enumerate(opt):
+            arg_name = _o
+            flag = False
+            if not _o.startswith("--"):
+                continue
             if _o.startswith("--") and not "=" in _o:
                 if len(opt)-1 == i:
                     arg_name = _o
                     arg_value = "True"
+                    flag = True
                 else: 
                     nxt = opt[i+1]
-                    if nxt.startswith("--"):
-                        arg_name = _o
-                        arg_value = nxt
-
-
+                    arg_name = _o
+                    arg_value = nxt
             elif _o.startswith("--") and "=" in _o:
                 sp = _o.split("=")
                 arg_name, arg_value = sp[0], sp[1]
-             #   pairs.append((sp[0], sp[1]))
+
             arg_name = arg_name.lstrip("-")
             _valid = False
             for _arg in command.arguments:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
+                    if _arg.flag is False and flag is True:
+                        raise ValueError("Must be marked as flag!")
                     pairs.append((arg_name, arg_value))
                     _valid = True
 
