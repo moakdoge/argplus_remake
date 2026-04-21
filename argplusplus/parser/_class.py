@@ -37,9 +37,12 @@ class Parser:
 
         fx = self._keywords[valid_len:]
         new = []
-        for i, val in enumerate(fx):
-            print(valid.arguments[i])
-            new.append(f"--{valid.arguments[i].name}={val}")
+        i=0
+        for val in enumerate(fx):
+            new.append(f"--{valid.arguments[i].name}={val[1]}")
+            if valid.arguments[i].verradic:
+                continue
+            i+=1
 
         self._options = new + self._options
 
@@ -64,7 +67,7 @@ class Parser:
         arg_value: str = ""
         _current_legit_arg = 0
         seen = set()
-
+        vals: dict[str, list] = {}
         #attempt to recover the args if they're at the staert
 
         for i, _o in enumerate(opt):
@@ -95,10 +98,17 @@ class Parser:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
                     if _arg.flag is False and flag is True:
                         raise ValueError("Must be marked as flag!")
-                    if arg_name in seen:
-                        raise Exception(f"Please only use {arg_name} once")
-                    seen.add(arg_name)
-                    pairs.append((arg_name, _arg._convert_type(arg_value)))
+                    
+                    if not _arg.verradic:
+                        if arg_name in seen:
+                            raise Exception(f"Please only use {arg_name} once")
+                        seen.add(arg_name)
+                        pairs.append((arg_name, _arg._convert_type(arg_value)))
+                    else:
+
+                        if not arg_name in vals:
+                            vals.setdefault(arg_name, [])
+                        vals[arg_name].append(_arg._convert_type(arg_value))
                     _valid = True
 
             if not _valid:
@@ -113,6 +123,8 @@ class Parser:
                     n[arg.name] = arg.default
                 elif arg.flag:
                     n[arg.name] = False
+
+        n.update(vals)
         return n
     
     @cached_property

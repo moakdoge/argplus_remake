@@ -62,4 +62,11 @@ class CommandManager:
         #look for command
         for command in self._real_cmds:
             if tuple(command.chain) == opt.cmd.parts:
-                command.function(**opt.args)
+                _args = []
+                _kwrds = {}
+                for a, v in opt.args.items():
+                    if isinstance(v, list):
+                        _args.extend(v)
+                    else:
+                        _kwrds[a] = v
+                command.function(*_args, **_kwrds)

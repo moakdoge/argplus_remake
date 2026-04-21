@@ -12,6 +12,8 @@ class Argument:
     default: Any = _empty
     verradic: bool = False
     def _convert_type(self, value: str):
+        if self.verradic:
+            return str(value)
         if self.flag:
             if value.lower() in ["y", "yes", "true"]:
                 return True

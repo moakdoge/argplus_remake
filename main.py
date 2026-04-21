@@ -5,8 +5,8 @@ manager = argpp.manager.CommandManager("example")
 
 
 @manager.register("example", "command")
-def example(*x: str):
-    print(x)
+def example(*x: str, y: str):
+    print(x, "y is:", y)
     pass
 
 
