@@ -1,6 +1,4 @@
 import argplusplus as argpp
+from argplusplus.parser import _class
 
-manager = argpp.manager.CommandManager("test")
-
-
-manager.process()
+parser = _class.Parser()
