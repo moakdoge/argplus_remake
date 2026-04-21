@@ -1,3 +1,4 @@
+import inspect
 import sys
 
 from .command import Command
@@ -22,11 +23,24 @@ class CommandManager:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             #start making a tree
             last = self._command_tree
+            sig = inspect.signature(func)
+            _args = []
+            
+            for st, arg in sig.parameters.items():
+                a = flag.Argument(
+                    arg.name,
+                    ("",),
+                    (arg.annotation is bool),
+                    arg.annotation
+                )
+                _args.append(a)
+
+            c=flag.Command(parts=tuple(commands), arguments=tuple(_args))
             self._tmp_cmds.append(
-                flag.Command(parts=tuple(commands))
+                c
             )
             self._real_cmds.append(
-                Command(func, list(commands), author=author)
+                Command(func, list(commands), author=author, command=c)
             )
             @wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -45,4 +59,4 @@ class CommandManager:
         #look for command
         for command in self._real_cmds:
             if tuple(command.chain) == opt.cmd.parts:
-                command.function()
+                command.function(*opt.args)

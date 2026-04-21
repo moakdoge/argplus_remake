@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Callable
 
+from argplusplus.parser import flag
+
 
 @dataclass()
 class Command:
@@ -11,7 +13,7 @@ class Command:
     author: str = "N/A"
     children: dict[str, "Command"] = field(default_factory=dict)
     parser: argparse.ArgumentParser | None = None
-
+    command: flag.Command | None = None
     @cached_property
     def description(self):
         if self.function.__doc__:

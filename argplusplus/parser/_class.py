@@ -25,7 +25,7 @@ class Parser:
 
         if valid is None:
             raise Exception
-        self._options_tuple: list[tuple[str, Any]] = self._process_options(self._options, valid)
+        self._options_tuple: dict[str, Any] = self._process_options(self._options, valid)
         return Result(
             valid,self._options_tuple
         )
@@ -39,7 +39,7 @@ class Parser:
                 self._commands.add(command)
 
 
-    def _process_options(self, opt: list[str], command: Command) -> list[tuple[str, Any]]:
+    def _process_options(self, opt: list[str], command: Command) -> dict[str, Any]:
         pairs = []
         arg_name: str = ""
         arg_value: str = ""
@@ -73,7 +73,12 @@ class Parser:
 
             if not _valid:
                 raise Exception("Invalid argument!")
-        return pairs
+            
+        n = {}
+        for p, x in pairs:
+            n[p] = x
+        
+        return n
     
     @cached_property
     def caller(self):

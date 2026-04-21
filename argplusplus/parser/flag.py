@@ -39,4 +39,4 @@ class Command:
 @dataclass(frozen=True, slots=True)
 class Result:
     cmd: Command
-    args: list[tuple[str, Any]]
+    args: dict[str, Any]
