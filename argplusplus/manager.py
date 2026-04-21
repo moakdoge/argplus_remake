@@ -36,7 +36,8 @@ class CommandManager:
                     ("",),
                     (anno is bool),
                     anno, # type: ignore
-                    verradic=ver
+                    verradic=ver,
+                    default=arg.default if not arg.default is inspect._empty else _empty
                 )
                 _args.append(a)
 
@@ -59,14 +60,19 @@ class CommandManager:
         if base is None:
             for command in self._real_cmds:
                 first_layer.add(command.chain[0])
-                base = [command.chain[0]]
+                base = None
         else:
-
-            for command in self._real_cmds:
-                if command.chain[0:len(base)] == base:
-                    first_layer.add(command.chain[len(base)])
-    
-        return f"Usage: {self.name} {" ".join(base)} [-h] {{{" | ".join(list(first_layer))}}}" # type: ignore
+       
+            for command in self._tmp_cmds:
+                if list(command.parts[0:len(base)]) == base:
+                    if list(command.parts) == base:
+                        _ = []
+                        for a in command.arguments:
+                            first_layer.add(a.name)
+                        continue
+                    #first_layer.add(list(command.parts[len(base)]))
+        
+        return f"Usage: {self.name}{" " + " ".join(base) if base is not None else ""} [-h] {{{" | ".join(list(first_layer))}}}" # type: ignore
     def help(self, chain: list[str] | None = None):
         #get the first layer
         first_layer = set()
@@ -78,7 +84,7 @@ class CommandManager:
             self.description,
         ]
         
-        if True:
+        if chain is None or len(chain) < 1:
             
             cmds = []
             ln = max(len(i.parts[0]) for i in self._tmp_cmds) * 2
@@ -86,6 +92,23 @@ class CommandManager:
                 cmds.append(f"\t{command.parts[0]}{" "*(ln-len(command.parts[0]))}{command.comment.strip("\n")}")
             lines.extend([
                 "commands:",
+                *cmds
+            ])
+        else:
+            
+            cmds = []
+            exact = False
+            ln = max(len(i.parts[0]) for i in self._tmp_cmds) * 2
+            for command in self._tmp_cmds:
+                if list(command.parts[0:len(chain)]) == chain:
+                    if list(command.parts) == chain:
+                        exact = True
+                        for arg in command.arguments:
+                            cmds.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*(ln-len(arg.name))}{arg.comment.strip("\n")}{"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
+                    else:
+                        cmds.append(f"\t{command.parts[len(chain):len(chain)+1][0]}{" "*(ln-len(command.parts[len(chain):len(chain)+1]))}{command.comment.strip("\n")}")
+            lines.extend([
+                "commands:" if not exact else "options:",
                 *cmds
             ])
         return "\n".join(lines)
@@ -97,8 +120,8 @@ class CommandManager:
         self._main_parser = _class.Parser(args)
         self._main_parser.add(self._tmp_cmds)
         opt = self._main_parser.process()
-        if not opt:
-            print(self.help())
+        if not opt or True:
+            print(self.help(self._main_parser._keywords))
             return
         
         success = False

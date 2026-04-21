@@ -5,7 +5,7 @@ manager = argpp.manager.CommandManager("example")
 
 
 @manager.register("package", "command")
-def example(x: str, y: str):
+def example(x: str, y: int = 1):
     '''
         Hi world!!! This is my docstring
     '''
@@ -13,7 +13,7 @@ def example(x: str, y: str):
     pass
 
 @manager.register("package2", "command")
-def example3(x: str, y: str):
+def example3(x: str, y: int):
     '''Hi world!!!'''
     print("x is:", x, "y is:", y)
     pass

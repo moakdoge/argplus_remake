@@ -11,6 +11,7 @@ class Argument:
     tp: type = type[Any]
     default: Any = _empty
     verradic: bool = False
+    comment: str = ""
     def _convert_type(self, value: str):
         if self.verradic:
             return str(value)
