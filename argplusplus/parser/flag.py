@@ -10,6 +10,7 @@ class Argument:
     flag: bool = False
     tp: type = type[Any]
     default: Any = _empty
+    verradic: bool = False
     def _convert_type(self, value: str):
         if self.flag:
             if value.lower() in ["y", "yes", "true"]:
@@ -18,8 +19,9 @@ class Argument:
                 return False
             else:
                 return bool(value)
-        if self.tp == type[Any]:
+        if self.tp == type[Any] or self.tp is _empty:
             return self._coarse(value)
+
         return self.tp(value)
     
     def _coarse(self, value: str):

@@ -34,11 +34,11 @@ class Parser:
         if valid is None:
             raise Exception
         
-        
+
         fx = self._keywords[valid_len:]
         new = []
         for i, val in enumerate(fx):
-            
+            print(valid.arguments[i])
             new.append(f"--{valid.arguments[i].name}={val}")
 
         self._options = new + self._options
@@ -63,7 +63,8 @@ class Parser:
         arg_name: str = ""
         arg_value: str = ""
         _current_legit_arg = 0
-        
+        seen = set()
+
         #attempt to recover the args if they're at the staert
 
         for i, _o in enumerate(opt):
@@ -94,6 +95,9 @@ class Parser:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
                     if _arg.flag is False and flag is True:
                         raise ValueError("Must be marked as flag!")
+                    if arg_name in seen:
+                        raise Exception(f"Please only use {arg_name} once")
+                    seen.add(arg_name)
                     pairs.append((arg_name, _arg._convert_type(arg_value)))
                     _valid = True
 

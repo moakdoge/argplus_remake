@@ -7,7 +7,7 @@ from functools import wraps
 from typing import TypeVar, ParamSpec, Callable
 P = ParamSpec('P')
 R = TypeVar('R')
-from argplusplus.parser import flag, _class
+from argplusplus.parser import flag, _class, _empty
 class CommandManager:
     def __init__(self, name: str, description: str = "N/A") -> None:
         self._main_parser: _class.Parser
@@ -27,11 +27,14 @@ class CommandManager:
             _args = []
             
             for st, arg in sig.parameters.items():
+                anno = arg.annotation if arg.annotation is not inspect._empty else _empty
+                ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(
                     arg.name,
                     ("",),
-                    (arg.annotation is bool),
-                    arg.annotation
+                    (anno is bool),
+                    anno,
+                    verradic=ver
                 )
                 _args.append(a)
 
