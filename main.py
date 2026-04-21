@@ -5,7 +5,7 @@ manager = argpp.manager.CommandManager("example")
 
 
 @manager.register("example", "command")
-def example(x: int = 9):
+def example(x: int):
     #lmao
     print("works!! x is", x)
 

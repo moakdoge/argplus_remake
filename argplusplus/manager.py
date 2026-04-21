@@ -59,4 +59,4 @@ class CommandManager:
         #look for command
         for command in self._real_cmds:
             if tuple(command.chain) == opt.cmd.parts:
-                command.function(*opt.args)
+                command.function(**opt.args)

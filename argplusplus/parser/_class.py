@@ -1,7 +1,7 @@
 from functools import cached_property
 import sys
 from typing import Any
-
+from . import _empty
 from .flag import Command, Argument, Result
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
@@ -77,6 +77,10 @@ class Parser:
         n = {}
         for p, x in pairs:
             n[p] = x
+        for arg in command.arguments:
+            if not arg.name in n:
+                if arg.default is not _empty:
+                    n[arg.name] = arg.default
         
         return n
     

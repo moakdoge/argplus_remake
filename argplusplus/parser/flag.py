@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
+from . import _empty
 
 
 @dataclass(slots=True, unsafe_hash=True)
@@ -8,6 +9,7 @@ class Argument:
     aliases: tuple[str] = () # type: ignore
     flag: bool = False
     tp: type = type[Any]
+    default: Any = _empty
     def _convert_type(self, value: str):
         if self.flag:
             if value.lower() in ["y", "yes", "true"]:
