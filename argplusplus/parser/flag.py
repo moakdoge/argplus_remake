@@ -40,6 +40,7 @@ class Command:
     parts: tuple[str, ...]
     aliases: tuple[str, ...] = () # type: ignore
     arguments: tuple[Argument, ...] = () # type: ignore
+    comment: str = ""
 
 
 @dataclass(frozen=True, slots=True)

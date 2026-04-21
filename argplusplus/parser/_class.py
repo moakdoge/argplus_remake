@@ -8,7 +8,7 @@ class Parser:
         self._raw_args = args
         self._commands: set[Command] = set()
 
-    def process(self) -> Result:
+    def process(self) -> Result | None:
         args = self._raw_args
         self._keywords = []
         self._options = []
@@ -32,7 +32,7 @@ class Parser:
 
 
         if valid is None:
-            raise Exception
+            return None
         
 
         fx = self._keywords[valid_len:]
