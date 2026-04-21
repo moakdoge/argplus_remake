@@ -5,7 +5,7 @@ from typing import Any
 @dataclass(slots=True, unsafe_hash=True)
 class Argument:
     name: str = ""
-    aliases: tuple[str] = ()
+    aliases: tuple[str] = () # type: ignore
     flag: bool = False
     tp: type = type[Any]
     def _convert_type(self, value: str):
@@ -16,9 +16,10 @@ class Argument:
                 return False
             else:
                 return bool(value)
-        if self.tp is type[Any]:
+        if self.tp == type[Any]:
             return self._coarse(value)
         return self.tp(value)
+    
     def _coarse(self, value: str):
         _types = [int, float, bool]
         for t in _types:
@@ -30,6 +31,6 @@ class Argument:
 
 @dataclass(slots=True, unsafe_hash=True)
 class Command:
-    parts: tuple[str]
-    aliases: tuple[str] = ()
-    arguments: tuple[Argument] = ()
+    parts: tuple[str, ...]
+    aliases: tuple[str, ...] = () # type: ignore
+    arguments: tuple[Argument, ...] = () # type: ignore
