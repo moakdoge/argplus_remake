@@ -2,6 +2,7 @@ from imaplib import Commands
 import inspect
 import sys
 
+from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 
 from .command import Command, Global
@@ -21,6 +22,7 @@ class CommandManager:
             Global("help", None, True, aliases=("h",))
         ]
         self.globals = Globals()
+        self._exception_holder: list[ExceptionCatcher] = []
         self.description = description
         
         pass
@@ -32,6 +34,16 @@ class CommandManager:
             flag=flag
         ))
 
+    def catch(self, *exception_types: type[Exception]) -> Callable[[Callable[P, R]], Callable[P, R]]:
+        def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            self._exception_holder.append(ExceptionCatcher(
+                func,tuple(exception_types)
+            ))
+            @wraps(func)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
 
     def register(self, *commands: str, author: str="", aliases: tuple[str, ...] | None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
@@ -207,6 +219,17 @@ class CommandManager:
             )
         return _global_list
     
+    def _raise(self, exc: Exception):
+        success = False
+        for i in self._exception_holder:
+            
+            if type(exc) in i.exception_type:
+                success = i.function(exc) or False
+
+        if not success:
+            raise exc
+
+    
     def _process(self, args: list[str] | None = None) :
         args = args or sys.argv #get arguments
 
@@ -250,15 +273,15 @@ class CommandManager:
                 _kwrds[a] = v
         try:
             command.function(*_args, **_kwrds)
-        except TypeError as e:
-            raise exceptions.MissingArgument(f"Missing argument: {e}")
-
+        except Exception as e:
+            self._raise(e)
     
     def process(self, args: list[str] | None = None):
         try:
             return self._process(args)
         except exceptions.ParsingException as e:
             print("error:", e)
+
             
     @cached_property
     def _specs(self):

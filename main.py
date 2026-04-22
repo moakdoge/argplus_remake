@@ -7,17 +7,22 @@ from argplusplus.parser import _class, flag
 manager = argpp.manager.CommandManager("pyu")
 manager.define_global(name="ea", flag=True)
 
+
+@manager.catch(TypeError)
+def catch(err: TypeError):
+    print(err)
+    return True
+
 @manager.register("example", "men", "are", "cool")
-def ex(x: bool, y: int = 67):
+def ex():
     '''example'''
-    print("x is", x, "y is", y)
-    pass
+    raise TypeError("hi")
    # print(manager.globals.ea)
   #  print("hi x:", x)
 
 
 @manager.register("example", "men", "aremt")
-def ex2(x: bool, y: int = 67):
+def ex2(x: bool, *, y: int = 67):
     '''example2'''
     print("x is", x, "y is", y)
     pass
