@@ -1,3 +1,6 @@
 __pycache__/
 *.py[cod]
-**/*.pyc
+**/*.py[cod]
+**/__pycache__
+*.py[cod]
+*.cpython-*.pyc
