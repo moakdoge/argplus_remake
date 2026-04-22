@@ -4,4 +4,7 @@ __pycache__/
 **/__pycache__
 *.py[cod]
 *.cpython-*.pyc
+argplusplus/__pycache__/
+argplusplus/__pycache__
+argplusplus/__pycache__/*.pyc
 argplusplus/__pycache__/manager.cpython-313.pyc
