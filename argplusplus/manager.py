@@ -18,7 +18,7 @@ class CommandManager:
         self._command_tree = {}
         self._real_cmds: list[Command] = []
         self._globals: list[Global] = [
-            Global("--help", None, True)
+            Global("--help", None, True, aliases=("h",))
         ]
         self.globals = Globals()
         self.description = description
@@ -33,7 +33,7 @@ class CommandManager:
         ))
 
 
-    def register(self, *commands: str, author: str="") -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def register(self, *commands: str, author: str="", aliases: tuple[str, ...] | None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             #start making a tree
             last = self._command_tree
@@ -49,7 +49,7 @@ class CommandManager:
                 ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(
                     arg.name,
-                    ("",),
+                    aliases or ("",), # type: ignore
                     (anno is bool),
                     anno, # type: ignore
                     verradic=ver,
@@ -169,7 +169,7 @@ class CommandManager:
             _global_list.append(
                 flag.Argument(
                     glob.name,
-                    ("",),
+                    glob.aliases or ("",), # type: ignore
                     glob.flag,
                     glob._type or type[Any],
                     glob.default

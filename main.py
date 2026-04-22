@@ -7,8 +7,8 @@ from argplusplus.parser import _class, flag
 manager = argpp.manager.CommandManager("example")
 manager.define_global(name="ea", flag=True)
 
-@manager.register("example")
-def ex(x: int = 0):
+@manager.register("example", aliases=("ex",))
+def ex(x: int = 69):
     print(manager.globals.ea)
     print("hi x:", x)
 

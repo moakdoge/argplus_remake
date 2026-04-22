@@ -16,7 +16,7 @@ class Parser:
         self._keywords = []
         self._options = []
         for i, arg in enumerate(args[1:]):
-            if arg.startswith("--"):
+            if arg.startswith("-") and (len(arg) - len(arg.lstrip("-")) <= 2):
                 self._options = args[1+i:]
                 break
             self._keywords.append(arg)
@@ -45,7 +45,7 @@ class Parser:
         for val in enumerate(fx):
             if i >= len(valid.arguments):
                 raise InvalidArgument(f"Too many parameters! Expected: {len(valid.arguments)}, got: {i+1}")
-            new.append(f"--{valid.arguments[i].name}={val[1]}")
+            new.append(f"-{valid.arguments[i].name}={val[1]}")
             if valid.arguments[i].verradic:
                 continue
             i+=1
@@ -76,70 +76,78 @@ class Parser:
         vals: dict[str, list] = {}
         #attempt to recover the args if they're at the staert
 
-        for i, _o in enumerate(opt):
-            arg_name = _o
+        for i, option in enumerate(opt):
+            arg_name = option
             flag = False
-
-            if not _o.startswith("--"):
-                #pairs.append((command.arguments[_current_legit_arg].name, _o))
+            if not option.startswith("-"): #so NOT an argument; just move on
                 _current_legit_arg += 1
                 continue
 
-            if _o.startswith("--") and not "=" in _o:
+            
+            #attempt to get arg name and arg value
+            if option.startswith("-") and not "=" in option: #format: -x 12
                 if len(opt)-1 == i:
-                    arg_name = _o
+                    arg_name = option
                     arg_value = "True"
                     flag = True
                 else: 
                     nxt = opt[i+1]
-                    arg_name = _o
                     arg_value = nxt
-            elif _o.startswith("--") and "=" in _o:
-                sp = _o.split("=")
-                arg_name, arg_value = sp[0], sp[1]
 
+            elif option.startswith("-") and "=" in option: #format: -x=12
+                sp = option.split("=")
+                arg_name, arg_value = sp[0], sp[1]
             arg_name = arg_name.lstrip("-")
-            _valid = False
+
+            #find applicable argument
+            argument: Argument | None = None
             for _arg in command.arguments:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
-                    if _arg.flag is False and flag is True:
-                        raise ValueError("Must be marked as flag!")
-                    
-                    if not _arg.verradic:
-                        if arg_name in seen:
-                            raise Exception(f"Please only use {arg_name} once")
-                        seen.add(arg_name)
-                        pairs.append((arg_name, _arg._convert_type(arg_value)))
-                    else:
+                    argument = _arg
 
-                        if not arg_name in vals:
-                            vals.setdefault(arg_name, [])
-                        vals[arg_name].append(_arg._convert_type(arg_value))
-                    _valid = True
-
-            if not _valid:
+            if argument is None: #try to find it in globals instead
                 for glob in self._globals:
-                    if glob.name == arg_name:
-                        self.processed_globals[arg_name] = glob._convert_type(arg_value)
+                    glob_name = glob.name.lstrip("-")
+                    if glob_name == arg_name or arg_name in glob.aliases:
+                        self.processed_globals[glob_name] = glob._convert_type(arg_value)
                         break
-                else:
+                else: #success
                     raise InvalidArgument("Invalid argument!")
-            
-        n = {}
-        for p, x in pairs:
-            n[p] = x
-        for arg in command.arguments:
-            if not arg.name in n:
-                if arg.default is not _empty:
-                    n[arg.name] = arg.default
-                elif arg.flag:
-                    n[arg.name] = False
+                continue
 
+
+    
+            if not argument.flag and flag:
+                raise ValueError("Must be marked as flag!")
+            
+            if not argument.verradic: #checking for a normal variable
+                if arg_name in seen:
+                    raise InvalidArgument(f"Please only use {arg_name} once!") 
+                seen.add(arg_name)
+                pairs.append((arg_name, argument._convert_type(arg_value)))
+            else: #checking for verradic (*x)
+                if not arg_name in vals: #if its not found just default to []
+                    vals.setdefault(arg_name, [])
+                vals[arg_name].append(argument._convert_type(arg_value))
+
+            
+
+
+        new = dict(pairs)
+        for arg in command.arguments:
+            if not arg.name in new:
+                new.setdefault(arg.name, False)
+                if arg.default is not _empty:
+                    new[arg.name] = arg.default
+                else:
+                    raise InvalidArgument(f"Missing parameter '{arg.name}'")
+
+        #fix globals
         for glob in self._globals:
             if not glob.name in self.processed_globals:
                 self.processed_globals[glob.name] = glob.default if not glob.flag else False
-        n.update(vals)
-        return n
+        new.update(vals)
+        return new
     
     @cached_property
     def caller(self):

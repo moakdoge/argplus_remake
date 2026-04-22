@@ -8,7 +8,7 @@ from ._custom_bool import BoolPlus
 @dataclass(slots=True, unsafe_hash=True)
 class Argument:
     name: str = ""
-    aliases: tuple[str] = () # type: ignore
+    aliases: tuple[str, ...] = () # type: ignore
     flag: bool = False
     tp: type = type[Any]
     default: Any = _empty

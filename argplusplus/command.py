@@ -30,3 +30,4 @@ class Global:
     _type: type | None = None
     flag: bool = False
     default: Any = _empty
+    aliases: tuple[str, ...] | None = None
