@@ -5,7 +5,7 @@ manager = argpp.manager.CommandManager("example")
 
 
 @manager.register("package", "command")
-def example(x: str, y: int = 1):
+def example(x: int, y: int = 1):
     '''
         Hi world!!! This is my docstring
     '''

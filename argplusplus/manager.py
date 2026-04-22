@@ -8,7 +8,7 @@ from functools import wraps
 from typing import TypeVar, ParamSpec, Callable
 P = ParamSpec('P')
 R = TypeVar('R')
-from argplusplus.parser import flag, _class, _empty
+from argplusplus.parser import flag, _class, _empty, exceptions
 class CommandManager:
     def __init__(self, name: str, description: str = "") -> None:
         self._main_parser: _class.Parser
@@ -119,8 +119,16 @@ class CommandManager:
 
         self._main_parser = _class.Parser(args)
         self._main_parser.add(self._tmp_cmds)
-        opt = self._main_parser.process()
-        if not opt or True:
+        try:
+            opt = self._main_parser.process()
+        except exceptions.ParsingException as e:
+            print(f"Error: {e}")
+            return
+        
+        if not opt:
+            print(self.help())
+            return
+        if "--help" in self._main_parser._raw_args:
             print(self.help(self._main_parser._keywords))
             return
         

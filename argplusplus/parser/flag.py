@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from . import _empty
 
+from .exceptions import *
 
 @dataclass(slots=True, unsafe_hash=True)
 class Argument:
@@ -25,7 +26,10 @@ class Argument:
         if self.tp == type[Any] or self.tp is _empty:
             return self._coarse(value)
 
-        return self.tp(value)
+        try:
+            return self.tp(value)
+        except Exception:
+            raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be coarsed!")
     
     def _coarse(self, value: str):
         _types = [int, float, bool]
@@ -34,7 +38,7 @@ class Argument:
                 return t(value)
             except Exception as e:
                 pass 
-        raise ValueError
+        raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be automatically coarsed!")
 
 @dataclass(slots=True, unsafe_hash=True)
 class Command:

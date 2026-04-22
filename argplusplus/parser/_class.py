@@ -3,6 +3,7 @@ import sys
 from typing import Any
 from . import _empty
 from .flag import Command, Argument, Result
+from .exceptions import *
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
         self._raw_args = args
@@ -113,7 +114,7 @@ class Parser:
                     _valid = True
 
             if not _valid:
-                raise Exception("Invalid argument!")
+                raise InvalidArgument("Invalid argument!")
             
         n = {}
         for p, x in pairs:
