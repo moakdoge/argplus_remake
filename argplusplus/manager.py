@@ -161,7 +161,7 @@ class CommandManager:
                 success = True
         if not success:
             print(self.help())
-
+    
     def process(self, args: list[str] | None = None):
         try:
             return self._process(args)

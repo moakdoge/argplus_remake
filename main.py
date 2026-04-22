@@ -11,7 +11,7 @@ def example(x: int, y: Annotated[int, "This is an argument"] = 1):
     '''
         Hi world!!! This is my docstring
     '''
-    print("x is:", x, "y is:", y)
+    raise Exception
     pass
 
 @manager.register("package", "command2")
