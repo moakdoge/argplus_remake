@@ -16,7 +16,6 @@ class CommandManager:
         self._main_parser: _class.Parser
         self.name = name
         self._command_tree = {}
-        self._tmp_cmds: list[flag.Command] = []
         self._real_cmds: list[Command] = []
         self._globals: list[Global] = []
         self.globals = Globals()
@@ -58,11 +57,8 @@ class CommandManager:
                 _args.append(a)
 
             c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "")
-            self._tmp_cmds.append(
-                c
-            )
             self._real_cmds.append(
-                Command(func, list(commands), author=author, command=c)
+                Command(func, list(commands), author=author, spec=c)
             )
             @wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -71,85 +67,114 @@ class CommandManager:
         return decorator
 
 
-    def _usage(self, base: list[str] | None = None):
+    def _usage(self, base: list[str] | tuple[str] | None = None):
         first_layer = set()
+        chain: tuple[str, ...]
+        chain_len: int = 0
         if base is None:
             for command in self._real_cmds:
                 first_layer.add(command.chain[0])
                 base = None
         else:
-       
-            for command in self._tmp_cmds:
-                if list(command.parts[0:len(base)]) == base:
-                    if list(command.parts) == base:
-                        _ = []
-                        for a in command.arguments:
-                            first_layer.add(a.name)
-                        continue
-                    #first_layer.add(list(command.parts[len(base)]))
+            chain = tuple(base)
+            chain_len = len(chain)
+            for command in self._real_cmds:
+                if command.spec.parts[0:chain_len] != base: #checking for general match
+                    continue
+
+                if command.spec.parts != base: #check for full match
+                    continue
+
+                for argument in command.spec.arguments:
+                    first_layer.add(argument.name)
+                
+
         
         
         return f"Usage: {self.name}{(" " + " ".join(base)) if base else ""} [--help] {f'{{{" | ".join(list(first_layer))}}}' if len(first_layer) > 0 else ""}" # type: ignore
+   
+    
+    
     def help(self, chain: list[str] | None = None):
         #get the first layer
         lines = [
-            self._usage(chain),
+            self._usage(chain), #generate the Usage: line
             self.description,
         ]
-        
-        if chain is None or len(chain) < 1:
-            
-            cmds = []
-            seen = set()
-            ln = max(len(i.parts[0]) for i in self._tmp_cmds) * 2
-            for command in self._tmp_cmds:
-                if command.parts[0] in seen:
+        command_strings: list[str] = []
+        seen_commands: set[tuple[str, ...]] = set()
+        spaces: int = 0
+
+        if chain is None or len(chain) < 1:    
+            max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
+            for command in self._real_cmds:
+                
+                primary = command.chain[0] #get the primary argument
+                if primary in seen_commands:
                     continue
-                seen.add(command.parts[0])
-                cmds.append(f"\t{command.parts[0]}{" "*(ln-len(command.parts[0]))}")
+
+                seen_commands.add(primary)
+            
+                #caclulate space sizing
+                spaces = max_len - len(primary)
+                command_strings.append(f"\t{primary}")
 
             lines.extend([
                 "commands:",
-                *cmds
+                *command_strings
             ])
         else:
             
-            cmds = []
             exact = False
-            ln = max(len(i.parts[0]) for i in self._tmp_cmds) * 2
-            for command in self._tmp_cmds:
-                if list(command.parts[0:len(chain)]) == chain:
-                    if list(command.parts) == chain:
-                        exact = True
-                        for arg in command.arguments:
-                            cmds.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*(ln-len(arg.name))}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
-                    else:
-                        cmds.append(f"\t{command.parts[len(chain):len(chain)+1][0]}{" "*(ln-len(command.parts[len(chain):len(chain)+1]))}")
-           
-            if len(cmds) < 1:
+            max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
+            chain_len = len(chain)
+
+            for command in self._real_cmds:
+                subset = list(command.spec.parts[0:chain_len])
+
+                if subset != chain:
+                    continue
+
+                parts = command.spec.parts[chain_len:chain_len+1]
+                if len(parts) < 1:
+                    exact = True
+                    for arg in command.spec.arguments:
+                        spaces = max_len-len(arg.name)
+                        command_strings.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
+                else:
+                    part_name = parts[0]
+                    spaces = max_len - len(part_name)
+                    command_strings.append(f"\t{part_name}{" "*spaces}")
+        
+            if len(command_strings) < 1:
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") # type: ignore #type: ingore
             lines.extend([
                 "commands:" if not exact else "options:",
-                *cmds
+                *command_strings
             ])
         return "\n".join(lines)
     
+    def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
+        for command in self._real_cmds:
+            if tuple(command.chain) == chain:
+                return command
+    
     def _process(self, args: list[str] | None = None) :
-        args = args or sys.argv
+        args = args or sys.argv #get arguments
 
-        self._main_parser = _class.Parser(args)
-        for i in self._globals:
+        self._main_parser = _class.Parser(args) #create core parser
+        for glob in self._globals:
             self._main_parser._globals.append(
                 flag.Argument(
-                    i.name,
+                    glob.name,
                     ("",),
-                    i.flag,
-                    i._type or type[Any],
-                    i.default
+                    glob.flag,
+                    glob._type or type[Any],
+                    glob.default
                 )
             )
 
-        self._main_parser.add(self._tmp_cmds)
+        self._main_parser.add([i.spec for i in self._real_cmds])
         #programming globals
         if "--help" in self._main_parser._raw_args:
             try:
@@ -174,22 +199,23 @@ class CommandManager:
 
         success = False
         #look for command
-        for command in self._real_cmds:
-            if tuple(command.chain) == opt.cmd.parts:
-                _args = []
-                _kwrds = {}
-                for a, v in opt.args.items():
-                    if isinstance(v, list):
-                        _args.extend(v)
-                    else:
-                        _kwrds[a] = v
-                try:
-                    command.function(*_args, **_kwrds)
-                except TypeError as e:
-                    raise exceptions.MissingArgument(f"Missing argument: {e}")
-                success = True
-        if not success:
+        command = self._find(opt.cmd.parts)
+        if command is None:
             print(self.help())
+            return
+        
+        _args = []
+        _kwrds = {}
+        for a, v in opt.args.items():
+            if isinstance(v, list):
+                _args.extend(v)
+            else:
+                _kwrds[a] = v
+        try:
+            command.function(*_args, **_kwrds)
+        except TypeError as e:
+            raise exceptions.MissingArgument(f"Missing argument: {e}")
+
     
     def process(self, args: list[str] | None = None):
         try:

@@ -10,10 +10,11 @@ from argplusplus.parser import flag, _empty
 class Command:
     function: Callable
     chain: list
+    spec: flag.Command
     author: str = "N/A"
     children: dict[str, "Command"] = field(default_factory=dict)
     parser: argparse.ArgumentParser | None = None
-    command: flag.Command | None = None
+    
     @cached_property
     def description(self):
         if self.function.__doc__:
