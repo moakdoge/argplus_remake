@@ -6,7 +6,7 @@ from argplusplus.globals import Globals
 
 from .command import Command, Global
 import argparse
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Annotated, Any, TypeVar, ParamSpec, Callable, get_args, get_origin
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -17,7 +17,9 @@ class CommandManager:
         self.name = name
         self._command_tree = {}
         self._real_cmds: list[Command] = []
-        self._globals: list[Global] = []
+        self._globals: list[Global] = [
+            Global("--help", None, True)
+        ]
         self.globals = Globals()
         self.description = description
         
@@ -101,6 +103,7 @@ class CommandManager:
             self._usage(chain), #generate the Usage: line
             self.description,
         ]
+
         command_strings: list[str] = []
         seen_commands: set[tuple[str, ...]] = set()
         spaces: int = 0
@@ -123,8 +126,8 @@ class CommandManager:
                 "commands:",
                 *command_strings
             ])
+
         else:
-            
             exact = False
             max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
             chain_len = len(chain)
@@ -148,6 +151,7 @@ class CommandManager:
         
             if len(command_strings) < 1:
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") # type: ignore #type: ingore
+            
             lines.extend([
                 "commands:" if not exact else "options:",
                 *command_strings
@@ -159,12 +163,10 @@ class CommandManager:
             if tuple(command.chain) == chain:
                 return command
     
-    def _process(self, args: list[str] | None = None) :
-        args = args or sys.argv #get arguments
-
-        self._main_parser = _class.Parser(args) #create core parser
+    def _create_globals(self) -> list[flag.Argument]:
+        _global_list: list[flag.Argument] = []
         for glob in self._globals:
-            self._main_parser._globals.append(
+            _global_list.append(
                 flag.Argument(
                     glob.name,
                     ("",),
@@ -173,18 +175,16 @@ class CommandManager:
                     glob.default
                 )
             )
+        return _global_list
+    
+    def _process(self, args: list[str] | None = None) :
+        args = args or sys.argv #get arguments
 
-        self._main_parser.add([i.spec for i in self._real_cmds])
-        #programming globals
-        if "--help" in self._main_parser._raw_args:
-            try:
-                self._main_parser.process()
-            except Exception as e:
-                pass
-            print(self.help(self._main_parser._keywords))
-            return
+        self._main_parser = _class.Parser(args) #create core parser
+        self._main_parser._globals = self._create_globals()
+        self._main_parser.add(self._specs)
         
-
+        #process
         opt = self._main_parser.process()
 
         if not opt:
@@ -196,8 +196,14 @@ class CommandManager:
         for glob, val in self._main_parser.processed_globals.items():
             setattr(self.globals, glob, val)
 
+        if self.globals.help:
+            try:
+                self._main_parser.process()
+            except Exception as e:
+                pass
+            print(self.help(self._main_parser._keywords))
+            return
 
-        success = False
         #look for command
         command = self._find(opt.cmd.parts)
         if command is None:
@@ -222,4 +228,7 @@ class CommandManager:
             return self._process(args)
         except exceptions.ParsingException as e:
             print("error:", e)
-            pass
+            
+    @cached_property
+    def _specs(self):
+        return [i.spec for i in self._real_cmds]

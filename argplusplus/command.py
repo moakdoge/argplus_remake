@@ -19,6 +19,7 @@ class Command:
     def description(self):
         if self.function.__doc__:
             return self.function.__doc__
+        return ""
     
     def __repr__(self) -> str:
         return f"<command ({",".join(self.chain)}: {self.parser})"
