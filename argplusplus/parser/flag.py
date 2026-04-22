@@ -3,6 +3,7 @@ from typing import Any
 from . import _empty
 
 from .exceptions import *
+from ._custom_bool import BoolPlus
 
 @dataclass(slots=True, unsafe_hash=True)
 class Argument:
@@ -32,7 +33,7 @@ class Argument:
             raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be coarsed!")
     
     def _coarse(self, value: str):
-        _types = [int, float, str]
+        _types = [int, float, BoolPlus, str]
         for t in _types:
             try:
                 return t(value)
