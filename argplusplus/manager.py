@@ -137,13 +137,16 @@ class CommandManager:
                     raise exceptions.InvalidCommmand("Command not found!")
                 args = []
                 for p in _found:
-                    st = " ".join(p.chain[len(chain):])
+                    st = " ".join(p.chain[len(chain):len(chain)+1])
                     _a = []
                     spaces = max_len-len(st)
-                    for argument in p.spec.arguments:
-                        _name = str(argument.name)
-                        _a.append("{%s [%s]: %s}" % (_name, argument.tp.__name__,"required" if argument.default is _empty else "optional"))
-                    command_strings.append(f"\t{st}{" "*spaces} {f", ".join(_a)}")
+                    if len(chain)+1 >= len(p.chain):
+                        for argument in p.spec.arguments:
+                            _name = str(argument.name)
+                            _a.append("{%s: %s (%s)}" % (_name, argument.tp.__name__,"required" if argument.default is _empty else "optional"))
+                        command_strings.append(f"\t{st}{" "*spaces}{"'%s'" % p.description} {f", ".join(_a)}")
+                    else:
+                        command_strings.append(f"\t{st}{" "*spaces}")
             else:
                 parts = command.spec.parts[chain_len:chain_len+1]
                 args = command.spec.arguments
