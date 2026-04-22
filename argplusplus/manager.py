@@ -24,6 +24,13 @@ class CommandManager:
         
         pass
 
+    def define_global(self, name: str, flag: bool = False, _type: type = type(Any)):
+        self._globals.append(Global(
+            name,
+            _type=_type,
+            flag=flag
+        ))
+
 
     def register(self, *commands: str, author: str="") -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
@@ -136,8 +143,9 @@ class CommandManager:
                 flag.Argument(
                     i.name,
                     ("",),
-                    False,
-                    i._type or type[Any]
+                    i.flag,
+                    i._type or type[Any],
+                    i.default
                 )
             )
 

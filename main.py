@@ -5,7 +5,7 @@ from argplusplus.command import Global
 from argplusplus.parser import _class, flag
 
 manager = argpp.manager.CommandManager("example")
-manager._globals.append(Global("ea"))
+manager.define_global(name="ea", flag=True)
 
 @manager.register("example")
 def ex(x: int = 0):

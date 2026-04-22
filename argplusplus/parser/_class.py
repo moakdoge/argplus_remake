@@ -43,6 +43,8 @@ class Parser:
         new = []
         i=0
         for val in enumerate(fx):
+            if i >= len(valid.arguments):
+                raise InvalidArgument(f"Too many parameters! Expected: {len(valid.arguments)}, got: {i+1}")
             new.append(f"--{valid.arguments[i].name}={val[1]}")
             if valid.arguments[i].verradic:
                 continue
@@ -133,6 +135,9 @@ class Parser:
                 elif arg.flag:
                     n[arg.name] = False
 
+        for glob in self._globals:
+            if not glob.name in self.processed_globals:
+                self.processed_globals[glob.name] = glob.default if not glob.flag else False
         n.update(vals)
         return n
     

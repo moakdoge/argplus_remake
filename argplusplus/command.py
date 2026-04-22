@@ -1,9 +1,9 @@
 import argparse
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable
+from typing import Any, Callable
 
-from argplusplus.parser import flag
+from argplusplus.parser import flag, _empty
 
 
 @dataclass()
@@ -26,3 +26,5 @@ class Command:
 class Global:
     name: str
     _type: type | None = None
+    flag: bool = False
+    default: Any = _empty

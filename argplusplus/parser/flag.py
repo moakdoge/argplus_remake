@@ -32,7 +32,7 @@ class Argument:
             raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be coarsed!")
     
     def _coarse(self, value: str):
-        _types = [int, float, bool]
+        _types = [int, float, str]
         for t in _types:
             try:
                 return t(value)
