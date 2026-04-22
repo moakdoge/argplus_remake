@@ -282,7 +282,9 @@ class CommandManager:
         except exceptions.ParsingException as e:
             print("error:", e)
 
-            
+    def run(self, *commands: str):
+        self._process([f"{self.name}"]+list(commands))
+
     @cached_property
     def _specs(self):
         return [i.spec for i in self._real_cmds]

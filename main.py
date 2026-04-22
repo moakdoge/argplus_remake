@@ -25,5 +25,6 @@ def ex():
 def ex2(x: bool, *, y: int = 67):
     '''example2'''
     print("x is", x, "y is", y)
+    manager.run("example", "men", "are", "cool")
     pass
 manager.process()
