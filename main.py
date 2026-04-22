@@ -8,9 +8,11 @@ manager = argpp.manager.CommandManager("example")
 manager.define_global(name="ea", flag=True)
 
 @manager.register("example", aliases=("ex",))
-def ex(x: int = 69):
-    print(manager.globals.ea)
-    print("hi x:", x)
+def ex(x: bool):
+    print(manager.globals)
+    pass
+   # print(manager.globals.ea)
+  #  print("hi x:", x)
 
 
 manager.process()

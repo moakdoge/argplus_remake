@@ -155,7 +155,6 @@ class CommandManager:
     
     def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
         for command in self._real_cmds:
-
             if tuple(command.chain) == chain:
                 return command
             for alias in command.spec.aliases:
@@ -202,6 +201,7 @@ class CommandManager:
                 self._main_parser.process()
             except Exception as e:
                 pass
+            
             print(self.help(self._main_parser._keywords))
             return
 

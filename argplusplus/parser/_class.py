@@ -31,6 +31,14 @@ class Parser:
                 if len(parts) > valid_len:
                     valid = cmd
                     valid_len = len(parts)
+                continue
+            for alias in cmd.aliases:
+                parts = list(cmd.parts).copy()
+                parts[-1] = alias
+                if self._keywords[:len(parts)] == parts:
+                    if len(parts) > valid_len:
+                        valid = cmd
+                        valid_len = len(parts)
 
 
 
@@ -116,7 +124,7 @@ class Parser:
                 continue
 
 
-    
+
             if not argument.flag and flag:
                 raise ValueError("Must be marked as flag!")
             
@@ -136,9 +144,10 @@ class Parser:
         new = dict(pairs)
         for arg in command.arguments:
             if not arg.name in new:
-                new.setdefault(arg.name, False)
                 if arg.default is not _empty:
                     new[arg.name] = arg.default
+                elif arg.flag:
+                    new[arg.name] = False
                 else:
                     raise InvalidArgument(f"Missing parameter '{arg.name}'")
 
