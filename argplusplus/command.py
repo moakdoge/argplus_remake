@@ -22,7 +22,7 @@ class Command:
         return ""
     
     def __repr__(self) -> str:
-        return f"<command ({",".join(self.chain)}: {self.parser})"
+        return f"<command ({",".join(self.chain)}: {self.parser})>"
     
 @dataclass(frozen=True, slots=True)
 class Global:

@@ -73,28 +73,23 @@ class CommandManager:
     def _usage(self, base: list[str] | tuple[str] | None = None):
         first_layer = set()
         chain: tuple[str, ...]
-        chain_len: int = 0
         if base is None:
             for command in self._real_cmds:
                 first_layer.add(command.chain[0])
                 base = None
         else:
             chain = tuple(base)
-            chain_len = len(chain)
-            for command in self._real_cmds:
-                if command.spec.parts[0:chain_len] != base: #checking for general match
-                    continue
-
-                if command.spec.parts != base: #check for full match
-                    continue
-
+            command = self._find(chain)
+            if command:     
                 for argument in command.spec.arguments:
                     first_layer.add(argument.name)
-                
+            
 
         
-        
-        return f"Usage: {self.name}{(" " + " ".join(base)) if base else ""} [--help] {f'{{{" | ".join(list(first_layer))}}}' if len(first_layer) > 0 else ""}" # type: ignore
+        _globals = ["--"+i.name for i in self._globals] 
+        _globals_st = " | ".join(_globals)
+        _cmd = f"{self.name}{(" " + " ".join(base)) if base else ""}"
+        return f"Usage: {_cmd} [{_globals_st}] {f'{{{" | ".join(list(first_layer))}}}' if len(first_layer) > 0 else ""}" # type: ignore
    
     
     
@@ -108,7 +103,7 @@ class CommandManager:
         command_strings: list[str] = []
         seen_commands: set[tuple[str, ...]] = set()
         spaces: int = 0
-
+        
         if chain is None or len(chain) < 1:    
             max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
             for command in self._real_cmds:
@@ -133,13 +128,29 @@ class CommandManager:
             max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
             chain_len = len(chain)
             command = self._find(chain)
+
             if not command:
-                raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
-            
-            parts = command.spec.parts[chain_len:chain_len+1]
+                #raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
+                parts = []
+                _found = self._find_partial(chain)
+                if not _found:
+                    raise exceptions.InvalidCommmand("Command not found!")
+                args = []
+                for p in _found:
+                    st = " ".join(p.chain[len(chain):])
+                    _a = []
+                    spaces = max_len-len(st)
+                    for argument in p.spec.arguments:
+                        _name = str(argument.name)
+                        _a.append("{%s [%s]: %s}" % (_name, argument.tp.__name__,"required" if argument.default is _empty else "optional"))
+                    command_strings.append(f"\t{st}{" "*spaces} {f", ".join(_a)}")
+            else:
+                parts = command.spec.parts[chain_len:chain_len+1]
+                args = command.spec.arguments
+
             if len(parts) < 1:
                 exact = True
-                for arg in command.spec.arguments:
+                for arg in args:
                     spaces = max_len-len(arg.name)
                     command_strings.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
             else:
@@ -154,6 +165,7 @@ class CommandManager:
         return "\n".join(lines)
     
     def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
+        chain = tuple(chain)
         for command in self._real_cmds:
             if tuple(command.chain) == chain:
                 return command
@@ -162,6 +174,21 @@ class CommandManager:
                 new[-1] = alias
                 if tuple(new) == tuple(chain):
                     return command
+                
+    def _find_partial(self, chain: list[str] | tuple[str, ...]) -> tuple[Command, ...] | None:
+        chain = tuple(chain)
+        commands: list[Command] = []
+        for command in self._real_cmds:
+            if tuple(command.chain)[0:len(chain)] == chain:
+                commands.append(command)
+                continue
+            for alias in command.spec.aliases:
+                new = list(command.chain.copy())
+                new[-1] = alias
+                if tuple(new)[0:len(chain)] == tuple(chain):
+                    commands.append(command)
+                    break
+        return tuple(commands)
                 
     def _create_globals(self) -> list[flag.Argument]:
         _global_list: list[flag.Argument] = []
