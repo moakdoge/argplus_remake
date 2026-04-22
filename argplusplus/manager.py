@@ -18,7 +18,7 @@ class CommandManager:
         self._command_tree = {}
         self._real_cmds: list[Command] = []
         self._globals: list[Global] = [
-            Global("--help", None, True, aliases=("h",))
+            Global("help", None, True, aliases=("h",))
         ]
         self.globals = Globals()
         self.description = description

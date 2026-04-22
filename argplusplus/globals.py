@@ -18,4 +18,5 @@ class Globals:
         for k, v in self._values:
             yield k, v
     def __repr__(self) -> str:
-        return "<Globals>"
+        parts = ", ".join(f"{k}={v}" for k, v in self._values.items())
+        return f"<Globals {parts}>"
