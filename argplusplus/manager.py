@@ -49,16 +49,17 @@ class CommandManager:
                 ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(
                     arg.name,
-                    aliases or ("",), # type: ignore
+                    ("",), # type: ignore
                     (anno is bool),
                     anno, # type: ignore
                     verradic=ver,
                     default=arg.default if not arg.default is inspect._empty else _empty,
                     comment=comment
                 )
+
                 _args.append(a)
 
-            c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "")
+            c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "", aliases=aliases or ("", ))
             self._real_cmds.append(
                 Command(func, list(commands), author=author, spec=c)
             )
@@ -131,27 +132,21 @@ class CommandManager:
             exact = False
             max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
             chain_len = len(chain)
-
-            for command in self._real_cmds:
-                subset = list(command.spec.parts[0:chain_len])
-
-                if subset != chain:
-                    continue
-
-                parts = command.spec.parts[chain_len:chain_len+1]
-                if len(parts) < 1:
-                    exact = True
-                    for arg in command.spec.arguments:
-                        spaces = max_len-len(arg.name)
-                        command_strings.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
-                else:
-                    part_name = parts[0]
-                    spaces = max_len - len(part_name)
-                    command_strings.append(f"\t{part_name}{" "*spaces}")
-        
-            if len(command_strings) < 1:
-                raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") # type: ignore #type: ingore
+            command = self._find(chain)
+            if not command:
+                raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
             
+            parts = command.spec.parts[chain_len:chain_len+1]
+            if len(parts) < 1:
+                exact = True
+                for arg in command.spec.arguments:
+                    spaces = max_len-len(arg.name)
+                    command_strings.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
+            else:
+                part_name = parts[0]
+                spaces = max_len - len(part_name)
+                command_strings.append(f"\t{part_name}{" "*spaces}")
+
             lines.extend([
                 "commands:" if not exact else "options:",
                 *command_strings
@@ -160,9 +155,15 @@ class CommandManager:
     
     def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
         for command in self._real_cmds:
+
             if tuple(command.chain) == chain:
                 return command
-    
+            for alias in command.spec.aliases:
+                new = list(command.chain.copy())
+                new[-1] = alias
+                if tuple(new) == tuple(chain):
+                    return command
+                
     def _create_globals(self) -> list[flag.Argument]:
         _global_list: list[flag.Argument] = []
         for glob in self._globals:
