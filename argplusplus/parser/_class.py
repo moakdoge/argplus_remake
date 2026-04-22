@@ -7,6 +7,8 @@ from .exceptions import *
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
         self._raw_args = args
+        self._globals: list[Argument] = []
+        self.processed_globals: dict[str, Any] = {}
         self._commands: set[Command] = set()
 
     def process(self) -> Result | None:
@@ -114,7 +116,12 @@ class Parser:
                     _valid = True
 
             if not _valid:
-                raise InvalidArgument("Invalid argument!")
+                for glob in self._globals:
+                    if glob.name == arg_name:
+                        self.processed_globals[arg_name] = glob._convert_type(arg_value)
+                        break
+                else:
+                    raise InvalidArgument("Invalid argument!")
             
         n = {}
         for p, x in pairs:

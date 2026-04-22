@@ -2,10 +2,12 @@ from imaplib import Commands
 import inspect
 import sys
 
-from .command import Command
+from argplusplus.globals import Globals
+
+from .command import Command, Global
 import argparse
 from functools import wraps
-from typing import Annotated, TypeVar, ParamSpec, Callable, get_args, get_origin
+from typing import Annotated, Any, TypeVar, ParamSpec, Callable, get_args, get_origin
 P = ParamSpec('P')
 R = TypeVar('R')
 from argplusplus.parser import flag, _class, _empty, exceptions
@@ -16,6 +18,8 @@ class CommandManager:
         self._command_tree = {}
         self._tmp_cmds: list[flag.Command] = []
         self._real_cmds: list[Command] = []
+        self._globals: list[Global] = []
+        self.globals = Globals()
         self.description = description
         
         pass
@@ -78,7 +82,7 @@ class CommandManager:
                     #first_layer.add(list(command.parts[len(base)]))
         
         
-        return f"Usage: {self.name}{(" " + " ".join(base)) if base is not None else ""} [--help] {f'{{{" | ".join(list(first_layer))}}}' if len(first_layer) > 0 else ""}" # type: ignore
+        return f"Usage: {self.name}{(" " + " ".join(base)) if base else ""} [--help] {f'{{{" | ".join(list(first_layer))}}}' if len(first_layer) > 0 else ""}" # type: ignore
     def help(self, chain: list[str] | None = None):
         #get the first layer
         lines = [
@@ -113,7 +117,7 @@ class CommandManager:
                         for arg in command.arguments:
                             cmds.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*(ln-len(arg.name))}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
                     else:
-                        cmds.append(f"\t{command.parts[len(chain):len(chain)+1][0]}{" "*(ln-len(command.parts[len(chain):len(chain)+1]))} '{command.comment.strip("\n")}'")
+                        cmds.append(f"\t{command.parts[len(chain):len(chain)+1][0]}{" "*(ln-len(command.parts[len(chain):len(chain)+1]))}")
            
             if len(cmds) < 1:
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") # type: ignore #type: ingore
@@ -124,11 +128,21 @@ class CommandManager:
         return "\n".join(lines)
     
     def _process(self, args: list[str] | None = None) :
-        if args is None:
-            args = sys.argv
+        args = args or sys.argv
 
         self._main_parser = _class.Parser(args)
+        for i in self._globals:
+            self._main_parser._globals.append(
+                flag.Argument(
+                    i.name,
+                    ("",),
+                    False,
+                    i._type or type[Any]
+                )
+            )
+
         self._main_parser.add(self._tmp_cmds)
+        #programming globals
         if "--help" in self._main_parser._raw_args:
             try:
                 self._main_parser.process()
@@ -136,6 +150,8 @@ class CommandManager:
                 pass
             print(self.help(self._main_parser._keywords))
             return
+        
+
         opt = self._main_parser.process()
 
         if not opt:
@@ -143,6 +159,11 @@ class CommandManager:
             return
 
         
+        #handle globals
+        for glob, val in self._main_parser.processed_globals.items():
+            setattr(self.globals, glob, val)
+
+
         success = False
         #look for command
         for command in self._real_cmds:

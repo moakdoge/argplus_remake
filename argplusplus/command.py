@@ -21,3 +21,8 @@ class Command:
     
     def __repr__(self) -> str:
         return f"<command ({",".join(self.chain)}: {self.parser})"
+    
+@dataclass(frozen=True, slots=True)
+class Global:
+    name: str
+    _type: type | None = None
