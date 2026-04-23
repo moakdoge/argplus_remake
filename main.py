@@ -1,4 +1,5 @@
 from typing import Annotated
+from xxlimited import Str
 
 import argplusplus as argpp
 from argplusplus.command import Global
@@ -12,7 +13,7 @@ manager.define_global(name="ea", flag=True)
 
 @manager.before("example men aremt")
 def before(c: CommandContext):
-    c.replace(command="working", clear=True)
+    #c.replace(command="working", clear=True)
     print("command about to run:", " ".join(c.command.chain))
     #c.replace(args=(1241,), kwargs={})
 
@@ -40,10 +41,9 @@ def ex():
 
 
 @manager.register("example", "men", "aremt")
-def ex2(x: bool, *, y: int = 67):
+def ex2(*x: str):
     '''example2'''
-    print("x is", x, "y is", y)
-   # manager.run("example", "men", "are", "cool")
-    return x*y
+    print("x is", x)
+
 
 manager.process()

@@ -140,9 +140,11 @@ class Parser:
 
             
 
-
         new = dict(pairs)
         for arg in command.arguments:
+            if arg.verradic:
+                if arg.name in vals:
+                    new[arg.name] = vals[arg.name]
             if not arg.name in new:
                 if arg.default is not _empty:
                     new[arg.name] = arg.default

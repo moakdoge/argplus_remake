@@ -88,3 +88,31 @@ def test_basic_command_with_verradics(manage, capsys):
     manage.run("example", "big", "string")
     assert "error" not in capsys.readouterr().out
     assert called is True
+
+def test_basic_command_with_verradics_and_kwargs(manage, capsys):
+    called = False
+    @manage.register("example")
+    def example(*x: str, y: int = 0):
+        nonlocal called
+        assert x == ("big", "string")
+        assert y == 69
+        called = True
+
+    manage.run("example", "big", "string", "--y=69")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
+
+def test_basic_command_with_verradics_and_kwargs_and_args(manage, capsys):
+    called = False
+    @manage.register("example")
+    def example(normal: int, *x: str, y: int = 0):
+        nonlocal called
+        assert normal == 52
+        assert x == ("big", "string")
+        assert y == 69
+        called = True
+
+    manage.run("example","52", "big", "string", "--y=69")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
+    
