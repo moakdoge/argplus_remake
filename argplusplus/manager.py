@@ -140,7 +140,7 @@ class CommandManager:
             max_len = max(len(i.spec.parts[0]) for i in self._real_cmds) * 2
             chain_len = len(chain)
             command = self._find(chain)
-
+            seen = set()
             if not command:
                 #raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
                 parts = []
@@ -158,7 +158,9 @@ class CommandManager:
                             _a.append("{%s: %s (%s)}" % (_name, argument.tp.__name__,"required" if argument.default is _empty else "optional"))
                         command_strings.append(f"\t{st}{" "*spaces}{"'%s'" % p.description} {f", ".join(_a)}")
                     else:
-                        command_strings.append(f"\t{st}{" "*spaces}")
+                        if not st in seen:
+                            command_strings.append(f"\t{st}{" "*spaces}")
+                            seen.add(st)
             else:
                 parts = command.spec.parts[chain_len:chain_len+1]
                 args = command.spec.arguments
