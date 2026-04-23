@@ -2,6 +2,7 @@ from imaplib import Commands
 import inspect
 import sys
 
+from argplusplus.command_context import CommandContext
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 
@@ -23,6 +24,8 @@ class CommandManager:
         ]
         self.globals = Globals()
         self._exception_holder: list[ExceptionCatcher] = []
+        self._before: list[Callable[[CommandContext]]] = []
+        self._after: list[Callable[[CommandContext]]] = []
         self.description = description
         
         pass
@@ -42,6 +45,32 @@ class CommandManager:
             @wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 return func(*args, **kwargs)
+            return wrapper
+        return decorator
+    
+    def before(self, *commands: str) -> Callable[[Callable[[CommandContext], R]], Callable[[CommandContext], R]]:
+        def decorator(func: Callable[[CommandContext], R]) -> Callable[[CommandContext], R]:
+            @wraps(func)
+            def wrapper(context: CommandContext) -> R:
+                if " ".join(context.command.chain) in commands or not commands:
+                    return func(context)
+
+                raise RuntimeError("Command did not match")
+
+            self._before.append(wrapper)
+            return wrapper
+        return decorator
+
+    def after(self, *commands: str) -> Callable[[Callable[[CommandContext], R]], Callable[[CommandContext], R]]:
+        def decorator(func: Callable[[CommandContext], R]) -> Callable[[CommandContext], R]:
+            @wraps(func)
+            def wrapper(context: CommandContext) -> R:
+                if " ".join(context.command.chain) in commands or not commands:
+                    return func(context)
+
+                raise RuntimeError("Command did not match")
+
+            self._after.append(wrapper)
             return wrapper
         return decorator
 
@@ -221,7 +250,7 @@ class CommandManager:
             )
         return _global_list
     
-    def _raise(self, exc: Exception):
+    def _raise(self, exc: Exception) -> bool:
         success = False
         for i in self._exception_holder:
             
@@ -230,6 +259,7 @@ class CommandManager:
 
         if not success:
             raise exc
+        return success
 
     
     def _process(self, args: list[str] | None = None) :
@@ -273,11 +303,22 @@ class CommandManager:
                 _args.extend(v)
             else:
                 _kwrds[a] = v
+
+        context = CommandContext(command, self, _args, _kwrds)
         try:
-            command.function(*_args, **_kwrds)
+            last = command.function
+            for before in self._before:
+                before(context)
+            output = context.command.function(*context.args, **context.kwargs)
+            context.output = output
+            context.success = True
         except Exception as e:
-            self._raise(e)
-    
+            o = self._raise(e)
+            if o:
+                context.exceptions.append(e)
+        for after in self._after:
+            after(context)
+
     def process(self, args: list[str] | None = None):
         try:
             return self._process(args)

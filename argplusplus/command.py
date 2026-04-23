@@ -13,7 +13,6 @@ class Command:
     spec: flag.Command
     author: str = "N/A"
     children: dict[str, "Command"] = field(default_factory=dict)
-    parser: argparse.ArgumentParser | None = None
     
     @cached_property
     def description(self):
@@ -22,7 +21,7 @@ class Command:
         return ""
     
     def __repr__(self) -> str:
-        return f"<command ({",".join(self.chain)}: {self.parser})>"
+        return f"<command ({",".join(self.chain)})>"
     
 @dataclass(frozen=True, slots=True)
 class Global:
