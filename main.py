@@ -10,10 +10,10 @@ manager.define_global(name="ea", flag=True)
 
 
 
-@manager.before()
+@manager.before("example men aremt")
 def before(c: CommandContext):
     print("command about to run:", " ".join(c.command.chain))
-    c.replace("example", "men", "aremt", args=[1])
+    c.replace(args=(1241,), kwargs={})
 
 @manager.after()
 def after(c: CommandContext):
@@ -43,6 +43,6 @@ def ex2(x: bool, *, y: int = 67):
     '''example2'''
     print("x is", x, "y is", y)
    # manager.run("example", "men", "are", "cool")
-    pass
+    return x*y
 
 manager.process()
