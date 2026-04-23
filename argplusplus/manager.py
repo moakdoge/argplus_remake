@@ -65,8 +65,7 @@ class CommandManager:
             def wrapper(context: CommandContext) -> R:
                 if " ".join(context.command.chain) in commands or not commands:
                     return func(context)
-
-                raise RuntimeError("Command did not match")
+                return None # type: ignore
 
             self._after.append(wrapper)
             return wrapper
