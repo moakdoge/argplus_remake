@@ -12,8 +12,9 @@ manager.define_global(name="ea", flag=True)
 
 @manager.before("example men aremt")
 def before(c: CommandContext):
+    c.replace(command="working", clear=True)
     print("command about to run:", " ".join(c.command.chain))
-    c.replace(args=(1241,), kwargs={})
+    #c.replace(args=(1241,), kwargs={})
 
 @manager.after()
 def after(c: CommandContext):

@@ -296,15 +296,22 @@ class CommandManager:
         
         _args = []
         _kwrds = {}
+
+        sig = inspect.signature(command.function)
         for a, v in opt.args.items():
-            if isinstance(v, list):
-                _args.extend(v)
-            else:
-                _kwrds[a] = v
+            if a in sig.parameters:
+                arg = sig.parameters[a]
+                if arg.kind == arg.KEYWORD_ONLY:
+                    _kwrds[a] = v
+                else:
+                    if isinstance(v, list):
+                        _args.extend(v)
+                    else:
+                        _args.append(v)
+
 
         context = CommandContext(command, self, _args, _kwrds)
         try:
-            last = command.function
             for before in self._before:
                 before(context)
             output = context.command.function(*context.args, **context.kwargs)

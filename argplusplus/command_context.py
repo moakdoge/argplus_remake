@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 from argplusplus.command import Command
 from argplusplus.parser.flag import Argument
 
@@ -17,10 +17,19 @@ class CommandContext:
     exceptions: list[Exception] = field(default_factory=list)
 
 
-    def replace(self,*,command: list[str] | tuple[str, ...] | None = None, args: list[Any] | tuple[Any] | None = None, kwargs: dict[str, Any] | None = None):
+    def replace(self,*,
+                command: str | list[str] | tuple[str, ...] | None = None, 
+                args: list[Any] | tuple[Any] | None = None, 
+                kwargs: dict[str, Any] | None = None,
+                clear: Annotated[bool, "Removes all existing args and kwargs"] = False
+                ):
         if isinstance(command, tuple):
             command = [*command]
-
+        if isinstance(command, str):
+            command = command.split(" ")
+        if clear:
+            self.args = []
+            self.kwargs = {}
         if args is not None:
             self.args = list(args)
         if kwargs is not None:
