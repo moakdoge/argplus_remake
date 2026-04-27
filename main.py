@@ -1,3 +1,4 @@
+from configparser import ParsingError
 from pathlib import Path
 from typing import Annotated
 
@@ -5,6 +6,7 @@ import argplusplus as argpp
 from argplusplus.command import Global
 from argplusplus.command_context import CommandContext
 from argplusplus.parser import _class, flag
+from argplusplus.parser.exceptions import ParsingException
 
 manager = argpp.manager.CommandManager("pyu")
 manager.define_global(name="ea", flag=True)
@@ -34,7 +36,7 @@ def working():
 @manager.register("example")
 def ex(k: Path):
     if not k.exists():
-        raise FileNotFoundError("...")
+        raise ParsingException("file does not exist")
     print(k.absolute())
 
    # print(manager.globals.ea)

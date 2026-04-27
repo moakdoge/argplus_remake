@@ -322,7 +322,9 @@ class CommandManager:
                 if o:
                     context.exceptions.append(e)
             except Exception as e:
-                raise exceptions.ParsingException(f"{type(e).__name__}('{str(e)}')")
+                if isinstance(e, exceptions.ParsingException):
+                    raise e
+                raise exceptions.ParsingException(e)
         for after in self._after:
             after(context)
 
