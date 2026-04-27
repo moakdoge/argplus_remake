@@ -6,6 +6,7 @@ import argplusplus as argpp
 from argplusplus.command import Global
 from argplusplus.command_context import CommandContext
 from argplusplus.parser import _class, flag
+from argplusplus.parser._alises import Alias
 from argplusplus.parser.exceptions import ParsingException
 
 manager = argpp.manager.CommandManager("pyu")
@@ -44,7 +45,7 @@ def ex(k: Path):
 
 
 @manager.register("example", "men", "aremt")
-def ex2(*x: str):
+def ex2(x: Alias["long_path", "longer_path", str]):
     '''example2'''
     print("x is", x)
 

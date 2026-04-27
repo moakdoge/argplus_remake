@@ -111,6 +111,7 @@ class Parser:
             argument: Argument | None = None
             for _arg in command.arguments:
                 if arg_name == _arg.name or arg_name in _arg.aliases:
+                    arg_name = _arg.name
                     argument = _arg
 
             if argument is None: #try to find it in globals instead

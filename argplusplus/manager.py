@@ -5,6 +5,7 @@ import sys
 from argplusplus.command_context import CommandContext
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
+from argplusplus.parser._alises import Alias
 
 from .command import Command, Global
 import argparse
@@ -81,13 +82,19 @@ class CommandManager:
             for st, arg in sig.parameters.items():
                 anno = arg.annotation if arg.annotation is not inspect._empty else _empty
                 comment = ""
+                _aliases = [""]
                 if get_origin(anno) is Annotated:
                     anno, comment = get_args(anno) 
+                if isinstance(arg.annotation, Alias):
+                    _aliases = list(arg.annotation.args)
+                    anno = Any
+                    if isinstance(_aliases[-1], type):
+                        anno =  _aliases.pop()
 
                 ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(
                     arg.name,
-                    ("",), # type: ignore
+                    tuple(_aliases), # type: ignore
                     (anno is bool),
                     anno, # type: ignore
                     verradic=ver,

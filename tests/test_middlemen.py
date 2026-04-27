@@ -115,3 +115,70 @@ def test_after_hook_limited(manage, capsys):
     assert intercepted == "example"
     assert success == True
 
+def test_exception_catching(manage, capsys):
+    called = False
+    intercepted = ""
+    success = False
+
+    @manage.catch(TypeError)
+    def d(c: TypeError):
+        nonlocal intercepted, success
+        success = isinstance(c, TypeError)
+        
+
+    @manage.register("example4")
+    def example(x: str):
+        nonlocal called
+        raise TypeError
+        called = True
+
+    with pytest.raises(Exception):
+        manage.run("example4", "59")
+    assert called == False
+    assert success == True
+
+
+def test_exception_catching_with_mute(manage, capsys):
+    called = False
+    intercepted = ""
+    success = False
+
+    @manage.catch(TypeError)
+    def d(c: TypeError):
+        nonlocal intercepted, success
+        success = isinstance(c, TypeError)
+        return True
+        
+
+    @manage.register("example4")
+    def example(x: str):
+        nonlocal called
+        raise TypeError
+        called = True
+
+    manage.run("example4", "59")
+    assert called == False
+    assert success == True
+
+def test_exception_catching_with_mute_and_generic(manage, capsys):
+    called = False
+    intercepted = ""
+    success = False
+
+    @manage.catch(Exception)
+    def d(c: Exception):
+        nonlocal intercepted, success
+        success = isinstance(c, TypeError)
+        return True
+        
+
+    @manage.register("example4")
+    def example(x: str):
+        nonlocal called
+        raise TypeError
+        called = True
+
+    manage.run("example4", "59")
+    assert called == False
+    assert success == True
+
