@@ -251,7 +251,7 @@ class CommandManager:
         success = False
         for i in self._exception_holder:
             
-            if type(exc) in i.exception_type:
+            if type(exc) in i.exception_type or Exception in i.exception_type:
                 success = i.function(exc) or False
 
         if not success:

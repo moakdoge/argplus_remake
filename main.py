@@ -21,8 +21,8 @@ def before(c: CommandContext):
 def after(c: CommandContext):
     print("command ran:", " ".join(c.command.chain), "with output:",c.output, "and successfully:", c.success, "and with exceptions of", c.exceptions)
     
-@manager.catch(TypeError)
-def catch(err: TypeError):
+@manager.catch(Exception)
+def catch(err: Exception):
     print(err)
     return True
 
@@ -33,10 +33,10 @@ def working():
 
 @manager.register("example")
 def ex(k: Path):
+    if not k.exists():
+        raise FileNotFoundError("...")
     print(k.absolute())
-    '''example'''
-    raise TypeError("hi")
-    
+
    # print(manager.globals.ea)
   #  print("hi x:", x)
 
