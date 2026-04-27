@@ -317,9 +317,12 @@ class CommandManager:
             context.output = output
             context.success = True
         except Exception as e:
-            o = self._raise(e)
-            if o:
-                context.exceptions.append(e)
+            try:
+                o = self._raise(e)
+                if o:
+                    context.exceptions.append(e)
+            except Exception as e:
+                raise exceptions.ParsingException(f"{type(e).__name__}('{str(e)}')")
         for after in self._after:
             after(context)
 
@@ -327,7 +330,9 @@ class CommandManager:
         try:
             return self._process(args)
         except exceptions.ParsingException as e:
-            print("error:", e)
+           print(e)
+           pass
+
 
     def run(self, *commands: str):
         self._process([f"{self.name}"]+list(commands))

@@ -23,8 +23,8 @@ def after(c: CommandContext):
     
 @manager.catch(Exception)
 def catch(err: Exception):
-    print(err)
-    return True
+  #  print(err)
+    return False
 
 
 @manager.register("working")
