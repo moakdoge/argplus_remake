@@ -1,5 +1,5 @@
+from pathlib import Path
 from typing import Annotated
-from xxlimited import Str
 
 import argplusplus as argpp
 from argplusplus.command import Global
@@ -31,8 +31,9 @@ def catch(err: TypeError):
 def working():
     print("IT WORKED!!!")
 
-@manager.register("example", "men", "are", "cool")
-def ex():
+@manager.register("example")
+def ex(k: Path):
+    print(k.absolute())
     '''example'''
     raise TypeError("hi")
     
