@@ -1,3 +1,4 @@
+from difflib import get_close_matches
 from imaplib import Commands
 import inspect
 import sys
@@ -177,7 +178,13 @@ class CommandManager:
                 parts = []
                 _found = self._find_partial(chain)
                 if not _found:
-                    raise exceptions.InvalidCommmand("Command not found!")
+                    _close = self._suggest_closest(chain)
+                    if _close is not None and len(_close) > 0:
+                        closest = self._suggest_closest(chain)
+                        
+                        raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found! Did you mean any of these: {", ".join(closest)}?") # type: ignore
+                    else:
+                        raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found!")
                 args = []
                 for p in _found:
                     st = " ".join(p.chain[len(chain):len(chain)+1])
@@ -222,7 +229,22 @@ class CommandManager:
                 new[-1] = alias
                 if tuple(new) == tuple(chain):
                     return command
-                
+            from difflib import get_close_matches
+
+    def _suggest(self, name: str, options: list[str]) -> list[str] | None:
+        matches = get_close_matches(name, options, n=3, cutoff=0.6)
+        return matches if matches else None    
+    
+    def _suggest_closest(self, chain: list[str]) -> list[str] | None:
+        _options = set()
+        for command in self._real_cmds:
+            _options.add(" ".join(command.chain))
+            for ali in command.spec.aliases:
+                cp = command.chain.copy()
+                cp[-1] = ali
+                _options.add(" ".join(command.chain))
+        return self._suggest(" ".join(chain), list(_options))
+    
     def _find_partial(self, chain: list[str] | tuple[str, ...]) -> tuple[Command, ...] | None:
         chain = tuple(chain)
         commands: list[Command] = []
