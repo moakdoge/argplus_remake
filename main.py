@@ -33,10 +33,12 @@ def catch(err: Exception):
 
 @manager.register("working")
 def working():
+    '''bruh'''
     print(manager._suggest_closest(["work"]))
 
 @manager.register("worker")
-def worker():
+def worker(x: int):
+    '''hi world'''
     print(manager._suggest_closest(["work"]))
 
 

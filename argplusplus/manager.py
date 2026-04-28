@@ -212,11 +212,15 @@ class CommandManager:
                 part_name = parts[0]
                 spaces = max_len - len(part_name)
                 command_strings.append(f"\t{part_name}{" "*spaces}")
-
+            if len(command_strings) < 1:
+                command_strings.append("\tN/A")
             lines.extend([
                 "commands:" if not exact else "options:",
                 *command_strings
             ])
+
+            if exact:
+                lines.insert(1, "\n"+"'"+command.description+"'" if command is not None else "")
         return "\n".join(lines)
     
     def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
@@ -292,6 +296,14 @@ class CommandManager:
         self._main_parser = _class.Parser(args) #create core parser
         self._main_parser._globals = self._create_globals()
         self._main_parser.add(self._specs)
+        if "--help" in args:
+            try:
+                self._main_parser.process()
+            except Exception as e:
+                pass
+            
+            print(self.help(self._main_parser._keywords))
+            return
         
         #process
         opt = self._main_parser.process()
