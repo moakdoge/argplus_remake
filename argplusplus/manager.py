@@ -85,11 +85,9 @@ class CommandManager:
                 _aliases = [""]
                 if get_origin(anno) is Annotated:
                     anno, comment = get_args(anno) 
-                if isinstance(arg.annotation, Alias):
-                    _aliases = list(arg.annotation.args)
-                    anno = Any
-                    if isinstance(_aliases[-1], type):
-                        anno =  _aliases.pop()
+                    if isinstance(comment, Alias):
+                        _aliases = list(comment.args)
+                        comment = anno
 
                 ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(

@@ -1,9 +1,14 @@
+from typing import Annotated
+
 import pytest
 import sys
 from pathlib import Path
 
+
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argplusplus as argpp
+from argplusplus.parser._alises import Alias
 @pytest.fixture
 def manage():
     return argpp.manager.CommandManager("test")
@@ -113,6 +118,18 @@ def test_basic_command_with_verradics_and_kwargs_and_args(manage, capsys):
         called = True
 
     manage.run("example","52", "big", "string", "--y=69")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
+    
+def test_basic_command_with_aliases(manage, capsys):
+    called = False
+    @manage.register("exampl22e", aliases=("e",))
+    def example(y: Annotated[int, Alias["new"]] = 0):
+        nonlocal called
+        assert y == 69
+        called = True
+
+    manage.run("e", "--new", "69")
     assert "error" not in capsys.readouterr().out
     assert called is True
     

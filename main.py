@@ -34,20 +34,20 @@ def catch(err: Exception):
 def working():
     print("IT WORKED!!!")
 
-@manager.register("example")
-def ex(k: Path):
-    if not k.exists():
-        raise ParsingException("file does not exist")
-    print(k.absolute())
 
    # print(manager.globals.ea)
   #  print("hi x:", x)
 
 
 @manager.register("example", "men", "aremt")
-def ex2(x: Alias["long_path", "longer_path", str]):
+def ex2(x: Annotated[str, Alias["long_path", "longer_path"]]):
     '''example2'''
     print("x is", x)
+
+@manager.register("example")
+def example(y: Annotated[int, Alias["new", "newer"]] = 0):
+    assert y == 69
+    called = True
 
 
 manager.process()
