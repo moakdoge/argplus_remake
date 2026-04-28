@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
+
+from argplusplus.typingutils.co import convert_value
 from . import _empty
 
 from .exceptions import *
@@ -18,29 +20,11 @@ class Argument:
     def _convert_type(self, value: str):
         if self.verradic:
             return str(value)
-        if self.flag:
-            if value.lower() in ["y", "yes", "true"]:
-                return True
-            elif value.lower() in ["n", "no", "false"]:
-                return False
-            else:
-                return bool(value)
-        if self.tp == type[Any] or self.tp is _empty:
-            return self._coarse(value)
 
-        try:
-            return self.tp(value)
-        except Exception:
-            raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be coarsed!")
-    
-    def _coarse(self, value: str):
-        _types = [int, float, BoolPlus, str]
-        for t in _types:
-            try:
-                return t(value)
-            except Exception as e:
-                pass 
-        raise InvalidArgumentType(f"Value {value} ({type(value).__name__}) cannot be automatically coarsed!")
+        if self.flag:
+            return BoolPlus.check(value)
+
+        return convert_value(value, self.tp)
 
 @dataclass(slots=True, unsafe_hash=True)
 class Command:
