@@ -1,6 +1,6 @@
 from functools import cached_property
 import sys
-from typing import Any
+from typing import Any, get_origin
 from . import _empty
 from .flag import Command, Argument, Result
 from .exceptions import *
@@ -128,8 +128,11 @@ class Parser:
 
             if not argument.flag and flag:
                 raise ValueError("Must be marked as flag!")
-            
-            if not argument.verradic: #checking for a normal variable
+            if get_origin(argument.tp) in (list, tuple):
+                if not arg_name in vals: #if its not found just default to []
+                    vals.setdefault(arg_name, [])
+                vals[arg_name].append(argument._convert_type(arg_value))
+            elif not argument.verradic: #checking for a normal variable
                 if arg_name in seen:
                     raise InvalidArgument(f"Please only use {arg_name} once!") 
                 seen.add(arg_name)
@@ -143,9 +146,8 @@ class Parser:
 
         new = dict(pairs)
         for arg in command.arguments:
-            if arg.verradic:
-                if arg.name in vals:
-                    new[arg.name] = vals[arg.name]
+            if arg.name in vals:
+                new[arg.name] = vals[arg.name]
             if not arg.name in new:
                 if arg.default is not _empty:
                     new[arg.name] = arg.default

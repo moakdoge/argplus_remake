@@ -133,3 +133,16 @@ def test_basic_command_with_aliases(manage, capsys):
     assert "error" not in capsys.readouterr().out
     assert called is True
     
+
+def test_basic_command_with_aliases_and_lists(manage, capsys):
+    called = False
+    @manage.register("exampl22e", aliases=("e",))
+    def example(y: list[int]):
+        nonlocal called
+        assert len(y) == 4 and y[1] == 69
+        called = True
+
+    manage.run("e", "0,69,0,0")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
+    

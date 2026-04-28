@@ -22,12 +22,13 @@ def before(c: CommandContext):
 
 @manager.after()
 def after(c: CommandContext):
+    print(c.args)
     print("command ran:", " ".join(c.command.chain), "with output:",c.output, "and successfully:", c.success, "and with exceptions of", c.exceptions)
     
 @manager.catch(Exception)
 def catch(err: Exception):
   #  print(err)
-    return False
+    return True
 
 
 @manager.register("working")
@@ -45,8 +46,8 @@ def ex2(x: Annotated[str, Alias["long_path", "longer_path"]]):
     print("x is", x)
 
 @manager.register("example")
-def example(y: Annotated[int, Alias["new", "newer"]] = 0):
-    assert y == 69
+def example(y: list[str]):
+    print(len(y))
     called = True
 
 
