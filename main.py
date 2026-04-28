@@ -47,7 +47,7 @@ def ex2(x: Annotated[str, Alias["long_path", "longer_path"]]):
 
 @manager.register("example")
 def example(y: list[str]):
-    print(len(y))
+    print(manager.run("example", "men", "aremt", "67"))
     called = True
 
 

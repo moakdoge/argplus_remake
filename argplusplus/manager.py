@@ -264,7 +264,7 @@ class CommandManager:
         return success
 
     
-    def _process(self, args: list[str] | None = None) :
+    def _process(self, args: list[str] | None = None) -> CommandContext | None:
         args = args or sys.argv #get arguments
 
         self._main_parser = _class.Parser(args) #create core parser
@@ -276,7 +276,7 @@ class CommandManager:
 
         if not opt:
             print(self.help(self._main_parser._keywords))
-            return
+            return None
 
         
         #handle globals
@@ -332,6 +332,7 @@ class CommandManager:
                 raise exceptions.ParsingException(e)
         for after in self._after:
             after(context)
+        return context
 
     def process(self, args: list[str] | None = None):
         try:
@@ -341,8 +342,8 @@ class CommandManager:
            pass
 
 
-    def run(self, *commands: str):
-        self._process([f"{self.name}"]+list(commands))
+    def run(self, *commands: str) -> CommandContext | None:
+        return self._process([f"{self.name}"]+list(commands))
 
     @cached_property
     def _specs(self):
