@@ -161,4 +161,21 @@ def test_basic_threaded(manage, capsys):
     o.join()
     assert manage.context.runtime > datetime.timedelta(seconds=0.2)
     assert called is True
+
+def test_basic_time(manage, capsys):
+    @manage.register("test")
+    def example(x: int):
+        return x
     
+    def test():
+        manage.run("test", "--x=123")
+
+    from timeit import timeit
+
+    tm=0
+    for i in range(1000):
+        start = time.perf_counter_ns()
+        manage.run("test", "--x=123")
+        tm += (time.perf_counter_ns() - start)
+    tm /= 1000
+    assert tm <= 50_000

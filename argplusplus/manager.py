@@ -111,12 +111,9 @@ class CommandManager:
 
             c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "", aliases=aliases or ("", ))
             self._real_cmds.append(
-                Command(func, list(commands), author=author, spec=c)
+                Command(func, list(commands), author=author, spec=c, sig=sig)
             )
-            @wraps(func)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                return func(*args, **kwargs)
-            return wrapper
+            return func
         return decorator
 
 
@@ -232,13 +229,16 @@ class CommandManager:
     def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
         chain = tuple(chain)
         for command in self._real_cmds:
-            if tuple(command.chain) == chain:
+            tupled_chain = tuple(command.chain)
+            if tupled_chain == chain:
                 return command
+            
             for alias in command.spec.aliases:
-                new = list(command.chain.copy())
+                new = command.chain.copy()
                 new[-1] = alias
                 if tuple(new) == tuple(chain):
                     return command
+                
             from difflib import get_close_matches
 
     def _suggest(self, name: str, options: list[str]) -> list[str] | None:
@@ -349,7 +349,7 @@ class CommandManager:
         _args = []
         _kwrds = {}
 
-        sig = inspect.signature(command.function)
+        sig = command.sig
         for a, v in opt.args.items():
             if a in sig.parameters:
                 arg = sig.parameters[a]
