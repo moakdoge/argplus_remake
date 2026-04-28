@@ -173,9 +173,10 @@ def test_basic_time(manage, capsys):
     from timeit import timeit
 
     tm=0
-    for i in range(1000):
+    tests = 1e4
+    for i in range(int(tests)):
         start = time.perf_counter_ns()
         manage.run("test", "--x=123")
         tm += (time.perf_counter_ns() - start)
-    tm /= 1000
-    assert tm <= 50_000
+    tm /= tests
+    assert tm <= 50_000 #50us / 0.000005s max time to run command

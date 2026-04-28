@@ -12,6 +12,7 @@ from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.parser._alises import Alias
 from argplusplus.terminal_properties import ManagerContext
+from argplusplus.typingutils.co import clean_tp
 
 from .command import Command, Global
 import argparse
@@ -111,7 +112,7 @@ class CommandManager:
 
             c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "", aliases=aliases or ("", ))
             self._real_cmds.append(
-                Command(func, list(commands), author=author, spec=c, sig=sig)
+                Command(func, list(commands), author=author, spec=c, sig=sig) # type: ignore
             )
             return func
         return decorator
@@ -196,7 +197,7 @@ class CommandManager:
                     if len(chain)+1 >= len(p.chain):
                         for argument in p.spec.arguments:
                             _name = str(argument.name)
-                            _a.append("{%s: %s (%s)}" % (_name, argument.tp.__name__,"required" if argument.default is _empty else "optional"))
+                            _a.append("{%s: %s (%s)}" % (_name,clean_tp(argument.tp),"required" if argument.default is _empty else "optional"))
                         command_strings.append(f"\t{st}{" "*spaces}{"'%s'" % p.description} {f", ".join(_a)}")
                     else:
                         if not st in seen:
@@ -210,7 +211,7 @@ class CommandManager:
                 exact = True
                 for arg in args:
                     spaces = max_len-len(arg.name)
-                    command_strings.append(f"\t{arg.name} [{arg.tp.__name__}]{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
+                    command_strings.append(f"\t{arg.name}: {clean_tp(arg.tp)}{" "*spaces}'{arg.comment.strip("\n")}' {"(required)" if arg.default is _empty else f"(default: {arg.default})"}")
             else:
                 part_name = parts[0]
                 spaces = max_len - len(part_name)

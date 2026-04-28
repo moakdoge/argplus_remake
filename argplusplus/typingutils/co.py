@@ -15,6 +15,42 @@ def coerce_auto(value: str):
 
     raise InvalidArgumentType(f"Value {value!r} cannot be automatically coerced")
 
+def clean_tp(tp: Any):
+    origin = get_origin(tp)
+    args = get_args(tp)
+    if origin is Annotated:
+        base, *meta = args
+        return clean_tp(base)
+    
+    if origin in (Union, UnionType):
+        _values = []
+        for option in args:
+            try:
+                _values.append(clean_tp( option))
+            except Exception:
+                pass
+        return f'{" | ".join(_values)}'
+    
+    if origin in (list, tuple):
+        return f"{origin.__name__}[{clean_tp(args[0])}]"
+    
+    if origin in (dict,):
+        return f"{origin.__name__}[{clean_tp(args[0])}, {clean_tp(args[1])}]"
+
+    if origin in (Literal,):
+        l=[]
+        for a in args:
+            if isinstance(a, str):
+                a = f"'{a}'"
+            elif isinstance(a, float):
+                a = f"{a:.3f}"
+            a = str(a)
+            l.append(a)
+        return f"{origin.__name__}[{", ".join(l)}]"
+
+    if hasattr(tp, "__name__"):
+        return tp.__name__
+
 def convert_value(value: str, tp: Any):
     origin = get_origin(tp)
     args = get_args(tp)

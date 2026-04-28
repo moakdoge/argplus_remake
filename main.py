@@ -2,7 +2,7 @@ from configparser import ParsingError
 from pathlib import Path
 import threading
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 import argplusplus as argpp
 from argplusplus.command import Global
@@ -15,7 +15,8 @@ manager = argpp.manager.CommandManager("pyu")
 manager.define_global(name="ea", flag=True)
 
 @manager.register("example")
-def example():
+def example(x: Annotated[dict[str, list[tuple[str | int]]], "the times to repeat"]):
+    '''hi world'''
     time.sleep(0.5)
 
 @manager.register("test")
