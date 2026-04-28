@@ -1,5 +1,7 @@
 from configparser import ParsingError
 from pathlib import Path
+import threading
+import time
 from typing import Annotated
 
 import argplusplus as argpp
@@ -12,49 +14,16 @@ from argplusplus.parser.exceptions import ParsingException
 manager = argpp.manager.CommandManager("pyu")
 manager.define_global(name="ea", flag=True)
 
-
-
-@manager.before("example men aremt")
-def before(c: CommandContext):
-    #c.replace(command="working", clear=True)
-    print("command about to run:", " ".join(c.command.chain))
-    #c.replace(args=(1241,), kwargs={})
-
-@manager.after()
-def after(c: CommandContext):
-    print(c.args)
-    print("command ran:", " ".join(c.command.chain), "with output:",c.output, "and successfully:", c.success, "and with exceptions of", c.exceptions)
-    
-@manager.catch(Exception)
-def catch(err: Exception):
-  #  print(err)
-    return True
-
-
-@manager.register("working")
-def working():
-    '''bruh'''
-    print(manager._suggest_closest(["work"]))
-
-@manager.register("worker")
-def worker(x: int):
-    '''hi world'''
-    print(manager._suggest_closest(["work"]))
-
-
-   # print(manager.globals.ea)
-  #  print("hi x:", x)
-
-
-@manager.register("example", "men", "aremt")
-def ex2(x: Annotated[str, Alias["long_path", "longer_path"]]):
-    '''example2'''
-    print("x is", x)
-
 @manager.register("example")
-def example(y: list[str]):
-    print(manager.run("example", "men", "aremt", "67"))
-    called = True
+def example():
+    time.sleep(0.5)
 
+@manager.register("test")
+def test():
+    t = manager.run("example", threaded=True)
+    if isinstance(t, threading.Thread):
+        print('wow..')
+        t.join()
+        print('bye')
 
 manager.process()

@@ -1,12 +1,17 @@
+from datetime import datetime
 from difflib import get_close_matches
 from imaplib import Commands
 import inspect
+import os
+from pathlib import Path
 import sys
+from threading import Thread
 
 from argplusplus.command_context import CommandContext
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.parser._alises import Alias
+from argplusplus.terminal_properties import ManagerContext
 
 from .command import Command, Global
 import argparse
@@ -29,6 +34,7 @@ class CommandManager:
         self._before: list[Callable[[CommandContext]]] = []
         self._after: list[Callable[[CommandContext]]] = []
         self.description = description
+        self.context: ManagerContext
         
         pass
 
@@ -292,6 +298,14 @@ class CommandManager:
     
     def _process(self, args: list[str] | None = None) -> CommandContext | None:
         args = args or sys.argv #get arguments
+        #process
+        if not hasattr(self, "context"):
+            self.context = ManagerContext(
+                cwd=Path.cwd(),
+                argv=args,
+                start=datetime.now(),
+                env=dict(os.environ),
+            )
 
         self._main_parser = _class.Parser(args) #create core parser
         self._main_parser._globals = self._create_globals()
@@ -373,11 +387,22 @@ class CommandManager:
             return self._process(args)
         except exceptions.ParsingException as e:
            print(e)
+           self.quit(1)
            pass
+        self.quit()
 
 
-    def run(self, *commands: str) -> CommandContext | None:
+
+    def run(self, *commands: str, threaded: bool = False) -> Thread | CommandContext | None:
+        if threaded:
+            t=Thread(target=self._process, daemon=True, args=([f"{self.name}"]+list(commands),))
+            t.start()
+            return t
         return self._process([f"{self.name}"]+list(commands))
+
+
+    def quit(self, return_code: int = 0):
+        sys.exit(return_code)
 
     @cached_property
     def _specs(self):

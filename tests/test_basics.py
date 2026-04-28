@@ -1,3 +1,5 @@
+import datetime
+import time
 from typing import Annotated
 
 import pytest
@@ -144,5 +146,19 @@ def test_basic_command_with_aliases_and_lists(manage, capsys):
 
     manage.run("e", "0,69,0,0")
     assert "error" not in capsys.readouterr().out
+    assert called is True
+    
+
+def test_basic_threaded(manage, capsys):
+    called = False
+    @manage.register("exampl22e", aliases=("e",))
+    def example():
+        nonlocal called
+        time.sleep(0.25)
+        called = True
+
+    o=manage.run("e",threaded=True)
+    o.join()
+    assert manage.context.runtime > datetime.timedelta(seconds=0.2)
     assert called is True
     
