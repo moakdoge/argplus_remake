@@ -16,6 +16,7 @@ import time
 
 from argplusplus._tee import tee_output
 from argplusplus.command_context import CommandContext, Pipes
+from argplusplus.console import Console
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.parser._alises import Alias
@@ -44,6 +45,7 @@ class CommandManager:
         self._after: list[Callable[[CommandContext]]] = []
         self.description = description
         self.context: ManagerContext
+        self.console: Console = Console()
         if make_executable:
             self._chabang()
         pass

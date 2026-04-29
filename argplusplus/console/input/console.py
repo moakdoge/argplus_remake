@@ -2,10 +2,10 @@ import sys, shutil
 import tty
 import termios
 
-from wkclp.input.keys import KeyReader
-from wkclp.input.progress_bar import ProgressBar
-from wkclp.input.spinner import Spinner
-from wkclp.types.widgets import SpinnerType
+from argplusplus.console.input.keys import KeyReader
+from argplusplus.console.input.progress_bar import ProgressBar
+from argplusplus.console.input.spinner import Spinner
+from argplusplus.console.types.widgets import SpinnerType
 
 
 class OutputConsole:

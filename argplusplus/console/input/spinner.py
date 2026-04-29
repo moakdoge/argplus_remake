@@ -2,7 +2,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, Self
 
-from wkclp.types.widgets import SpinnerType
+from argplusplus.console.types.widgets import SpinnerType
 
 
 if TYPE_CHECKING:

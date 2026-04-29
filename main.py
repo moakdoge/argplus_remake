@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from configparser import ParsingError
 from pathlib import Path
+import sys
 import threading
 import time
 from typing import Annotated, Any
@@ -22,7 +23,10 @@ def example():
 @manager.register("test")
 def test():
     manager.run("example", stdout=False)
-    print("stdout!")
+    with manager.console.progress_bar(label="Installing packages..") as progress:
+        for i, pack in enumerate(sys.modules):
+            progress.update(label=f"Installing {pack}", new=i/(len(sys.modules)-1))
+            time.sleep(0.1)
 
 @manager.after()
 def after(context: CommandContext):
