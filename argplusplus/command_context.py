@@ -2,10 +2,15 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any
 from argplusplus.command import Command
 from argplusplus.parser.flag import Argument
-
+from io import StringIO
 
 if TYPE_CHECKING:
     from . import manager
+
+@dataclass(slots=True, frozen=True)
+class Pipes:
+    stdout: str
+    stderr: str
 @dataclass(slots=True)
 class CommandContext:
     command: Command
@@ -14,6 +19,7 @@ class CommandContext:
     kwargs: dict[str, Any]
     output: Any = None
     success: bool = False
+    pipes: Pipes = Pipes("", "")
     exceptions: list[Exception] = field(default_factory=list)
 
 

@@ -1,13 +1,21 @@
+from contextlib import redirect_stderr, redirect_stdout
+import copy
 from datetime import datetime
 from difflib import get_close_matches
 from imaplib import Commands
 import inspect
+import io
 import os
 from pathlib import Path
+import shutil
+import stat
 import sys
+import tempfile
 from threading import Thread
+import time
 
-from argplusplus.command_context import CommandContext
+from argplusplus._tee import tee_output
+from argplusplus.command_context import CommandContext, Pipes
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.parser._alises import Alias
@@ -22,7 +30,7 @@ P = ParamSpec('P')
 R = TypeVar('R')
 from argplusplus.parser import flag, _class, _empty, exceptions
 class CommandManager:
-    def __init__(self, name: str, description: str = "") -> None:
+    def __init__(self, name: str, *, description: str = "", make_executable: Annotated[bool, "Automatically adds a shabang to your file. AND runs chmod +x on it"] = False) -> None:
         self._main_parser: _class.Parser
         self.name = name
         self._command_tree = {}
@@ -36,14 +44,39 @@ class CommandManager:
         self._after: list[Callable[[CommandContext]]] = []
         self.description = description
         self.context: ManagerContext
-        
+        if make_executable:
+            self._chabang()
         pass
 
-    def define_global(self, name: str, flag: bool = False, _type: type = type(Any)):
+    def _chabang(self):
+        '''will AUTOMATICALLY add a chabang to whatever file this is run AND makes the file executable'''
+        file: str | None = getattr(sys.modules['__main__'], '__file__', None)
+        SHABANG = "#!/usr/bin/env python3"
+        if file is None:
+            raise FileNotFoundError(f"Couldn't find main file {file}")
+        pathed = Path(file)
+        import inspect
+        with tempfile.NamedTemporaryFile("w", dir=pathed.parent, delete=True) as f:
+            contents = ""
+            with open(pathed, "r") as _:
+                contents = _.read()
+            if contents.startswith(SHABANG):
+                return
+            contents = SHABANG + "\n" + contents
+            f.write(contents)
+            f.flush()
+            os.replace(Path(f.name), pathed)
+        
+        #makes it executable :3
+        st = os.stat(pathed)
+        os.chmod(pathed, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    def define_global(self, name: str, *, flag: bool = False, _type: type = type(Any), aliases: list[str] | tuple[str, ...] | None = None):
         self._globals.append(Global(
             name,
             _type=_type,
-            flag=flag
+            flag=flag,
+            aliases=tuple(aliases) if aliases is not None else None
         ))
 
     def catch(self, *exception_types: type[Exception]) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -297,7 +330,7 @@ class CommandManager:
         return success
 
     
-    def _process(self, args: list[str] | None = None) -> CommandContext | None:
+    def _process(self, args: list[str] | None = None, *, stdout: bool = True, stderr: bool = True) -> CommandContext | None:
         args = args or sys.argv #get arguments
         #process
         if not hasattr(self, "context"):
@@ -365,9 +398,23 @@ class CommandManager:
 
         context = CommandContext(command, self, _args, _kwrds)
         try:
+
             for before in self._before:
                 before(context)
-            output = context.command.function(*context.args, **context.kwargs)
+
+            #generate the pipes
+
+            with tee_output(not stdout,not stderr) as (out, err):
+                output = context.command.function(*context.args, **context.kwargs)
+
+            stdout_text = out.getvalue()
+            stderr_text = err.getvalue()
+
+            
+
+          
+            pipes = Pipes(stderr=stderr_text, stdout=stdout_text)
+            context.pipes = pipes
             context.output = output
             context.success = True
         except Exception as e:
@@ -379,6 +426,7 @@ class CommandManager:
                 if isinstance(e, exceptions.ParsingException):
                     raise e
                 raise exceptions.ParsingException(e)
+        
         for after in self._after:
             after(context)
         return context
@@ -394,12 +442,8 @@ class CommandManager:
 
 
 
-    def run(self, *commands: str, threaded: bool = False) -> Thread | CommandContext | None:
-        if threaded:
-            t=Thread(target=self._process, daemon=True, args=([f"{self.name}"]+list(commands),))
-            t.start()
-            return t
-        return self._process([f"{self.name}"]+list(commands))
+    def run(self, *commands: str, stdout: bool = True, stderr: bool = False) -> CommandContext | None:
+        return self._process([f"{self.name}"]+list(commands), stdout=stdout, stderr=stderr)
 
 
     def quit(self, return_code: int = 0):

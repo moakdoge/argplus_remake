@@ -85,6 +85,49 @@ def test_after_hook(manage, capsys):
     assert intercepted == "example"
     assert success == True
 
+
+def test_after_stderr_stdout_hook(manage, capsys):
+
+    out, err = "", ""
+    @manage.after()
+    def d(c: CommandContext):
+        nonlocal out, err
+        out = c.pipes.stdout
+        err = c.pipes.stderr
+        
+    @manage.register("example")
+    def example(x: str):
+        assert True
+        sys.stdout.write("hello")
+        sys.stderr.write("error")
+
+    manage.run("example", "59")
+    assert out == "hello"
+    assert err == "error"
+
+
+def test_stdcapture_with_mute(manage, capsys):
+
+    out, err = "", ""
+    @manage.after()
+    def d(c: CommandContext):
+        nonlocal out, err
+        out = c.pipes.stdout
+        err = c.pipes.stderr
+        
+    @manage.register("example")
+    def example(x: str):
+        assert True
+        sys.stdout.write("hello")
+        sys.stderr.write("error")
+
+    manage.run("example", "59", stdout=False, stderr=False)
+    assert out == "hello"
+    assert err == "error"
+    assert "error" not in capsys.readouterr().out
+    assert "hello" not in capsys._captured_out
+    
+
 def test_after_hook_limited(manage, capsys):
     called = False
     intercepted = ""
@@ -136,6 +179,7 @@ def test_exception_catching(manage, capsys):
         manage.run("example4", "59")
     assert called == False
     assert success == True
+
 
 
 def test_exception_catching_with_mute(manage, capsys):

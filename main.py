@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from configparser import ParsingError
 from pathlib import Path
 import threading
@@ -11,20 +12,20 @@ from argplusplus.parser import _class, flag
 from argplusplus.parser._alises import Alias
 from argplusplus.parser.exceptions import ParsingException
 
-manager = argpp.manager.CommandManager("pyu")
-manager.define_global(name="ea", flag=True)
+manager = argpp.manager.CommandManager("pyu", make_executable=True)
 
 @manager.register("example")
-def example(x: Annotated[dict[str, list[tuple[str | int]]], "the times to repeat"]):
+def example():
     '''hi world'''
-    time.sleep(0.5)
+    print("nope :3")
 
 @manager.register("test")
 def test():
-    t = manager.run("example", threaded=True)
-    if isinstance(t, threading.Thread):
-        print('wow..')
-        t.join()
-        print('bye')
+    manager.run("example", stdout=False)
+    print("stdout!")
+
+@manager.after()
+def after(context: CommandContext):
+    print("output:", context.pipes.stdout)
 
 manager.process()
