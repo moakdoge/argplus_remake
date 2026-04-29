@@ -1,8 +1,8 @@
 import re
 
-from argplusplus.console.color._tag import _Tag
+from argplusplus.console.color._tag import _RandomTag, _Tag
 
-TAG_RE = re.compile(r"\[(/?)([a-zA-Z_][\w -]*|/)\]")
+TAG_RE = re.compile(r"\[(/?)([^\]]+)\]")
 from ._color import _FormattingColor
 
 COLORS = [
@@ -25,7 +25,19 @@ COLORS = [
     _FormattingColor("bright_magenta", "\033[95m", "\033[105m", "bright_magenta"),
     _FormattingColor("bright_cyan", "\033[96m", "\033[106m", "bright_cyan"),
     _FormattingColor("bright_white", "\033[97m", "\033[107m", "bright_white"),
+
+    # Formatting (no background support)
+    _FormattingColor("bold", "\033[1m", "", "bold", supports_background=False),
+    _FormattingColor("dim", "\033[2m", "", "dim", supports_background=False),
+    _FormattingColor("italic", "\033[3m", "", "italic", supports_background=False),
+    _FormattingColor("underline", "\033[4m", "", "underline", supports_background=False),
+    _FormattingColor("blink", "\033[5m", "", "blink", supports_background=False),
+    _FormattingColor("reverse", "\033[7m", "", "reverse", supports_background=False),
+    _FormattingColor("hidden", "\033[8m", "", "hidden", supports_background=False),
+    _FormattingColor("strike", "\033[9m", "", "strike", supports_background=False),
 ]
+
+
 
 
 def _find_color(color_name:str, background: bool=False) -> _FormattingColor | None:
@@ -43,16 +55,61 @@ def _find_tags(text: str) -> list[_Tag]:
     for match in TAG_RE.finditer(text):
         full = match.group(0)
         closing = bool(match.group(1))
-        name = match.group(2)
+        name = match.group(2).lower()
+        bg = name.startswith("background") or name.startswith("bg")
+        if bg:
+            name = name.lstrip("background")
+            name = name.lstrip("bg")
+        name = name.strip(" ")
 
-        t = _Tag(full, name, closing or name == "/", match.start(), match.end(),
-                 content=text[match.start():match.end()])
+
+        if name.startswith("random:"):
+            t = _RandomTag(full, name, closing or name == "/", match.start(), match.end(),
+                 content=text[match.start():match.end()], background=bg).fix()
+        else:
+            t = _Tag(full, name, closing or name == "/", match.start(), match.end(),
+                    content=text[match.start():match.end()], background=bg)
         tags.append(t)
 
     return tags
 
-def _process_tags(st: str):
+RESET = "\033[0m"
+
+def _process_tags(st: str) -> str:
     tags = _find_tags(st)
+    out: list[str] = []
+    last = 0
+    open_clrs: list[_FormattingColor] = []
+
     for tag in tags:
-        print(tag.content, tag.start, tag.end)
+        out.append(st[last:tag.start])
+        last = tag.end
+
+
+        if hasattr(tag, "get"):
+            out.append(tag.get())
+            continue
         
+        if tag.closing:
+            c=_find_color(tag.name, background=tag.background)
+            if c and (c.force_bg == tag.background):
+                c.force_bg = False
+                open_clrs.remove(c) # type: ignore
+            else:
+                raise Exception(f"Tag {tag.name} is not a valid closing tag!")
+            out.append(RESET)
+            #get all the existing tags
+            for clr in open_clrs:
+                out.append(clr.get())
+            continue
+
+        clr = _find_color(tag.name)
+        if not clr:
+            out.append(st[tag.start:tag.end])
+            continue
+        open_clrs.append(clr)
+        clr.force_bg = tag.background
+        out.append(clr.get())
+    out.append(st[last:])
+
+    return "".join(out)
