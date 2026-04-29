@@ -74,34 +74,54 @@ def _find_tags(text: str) -> list[_Tag]:
 
 RESET = "\033[0m"
 
+
+def _find_last_visible_chunk(parts: list[str]) -> tuple[int | None, str]:
+    for idx in range(len(parts) - 1, -1, -1):
+        part = parts[idx]
+        if not part:
+            continue
+        # Ignore ANSI control sequences when deciding what text to transform.
+        visible = re.sub(r"\x1b\[[0-9;]*m", "", part)
+        if visible:
+            return idx, visible
+    return None, ""
+
 def _process_tags(st: str) -> str:
     tags = _find_tags(st)
     out: list[str] = []
     last = 0
     open_clrs: list[_FormattingColor] = []
     for tag in tags:
-        last = tag.end
-        if hasattr(tag, "get"):
-            out.append(tag.get()) # type: ignore
-            continue
         out.append(st[last:tag.start])
-
-
-
-
+        last = tag.end
         if tag.closing:
-            c=_find_color(tag.name, background=tag.background)
-            if c and (c.force_bg == tag.background):
-                c.force_bg = False
-                open_clrs.remove(c) # type: ignore
+            if hasattr(tag, "get") and not tag.__class__ is _Tag:
+                chunk_idx, closing_text = _find_last_visible_chunk(out)
+                output = tag.get(closing=closing_text) # type: ignore
+                if isinstance(output, tuple):
+                    if chunk_idx is not None:
+                        out[chunk_idx] = output[1]
+                    out.append(output[0])
+                else:
+                    out.append(output)
             else:
-                raise Exception(f"Tag {tag.name} is not a valid closing tag!")
+                c=_find_color(tag.name, background=tag.background)
+                if c and (c.force_bg == tag.background):
+                    c.force_bg = False
+                    open_clrs.remove(c) # type: ignore
+                else:
+                    raise Exception(f"Tag {tag.name} is not a valid closing tag!")
             out.append(RESET)
             #get all the existing tags
             for clr in open_clrs:
                 out.append(clr.get())
             continue
-
+        if hasattr(tag, "get") and not tag.__class__ is _Tag:
+            o=tag.get()
+            if isinstance(o, tuple):
+                o=o[0]
+            out.append(o) # type: ignore
+            continue
         clr = _find_color(tag.name)
         if not clr:
             out.append(st[tag.start:tag.end])

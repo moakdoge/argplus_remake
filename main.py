@@ -32,7 +32,7 @@ def test():
             time.sleep(0.1)
 
 @manager.register("work")
-def work(t: str = "[random:4]"):
+def work(t: str = "[?random:6][bold]wow[/bold][/?random:9]"):
     print(clr._process_tags(t))
 
 manager.process()

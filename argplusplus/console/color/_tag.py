@@ -15,6 +15,9 @@ class _Tag:
     @staticmethod
     def valid(input: str) -> bool:
         return True
+    def get(self, closing: str | None = None) -> str | tuple[str, str]:
+        '''DO NOT USE'''
+        raise NotImplemented
 
 
 @dataclass()
@@ -23,18 +26,14 @@ class _RandomTag(_Tag):
     
     @staticmethod
     def valid(input: str):
-        return input.startswith("random:")
+        return input.startswith("?random:")
 
     def __post_init__(self):
-        self.fix()
-        
-    def fix(self) -> Self:
-        self._random_digits = int(self.name.lstrip("random:"))
-        return self
+        self._random_digits = int(self.name.lstrip("?random:"))
     
-    def get(self) -> str:
+    def get(self, closing: str | None = None) -> str:
         dig = [str(random.randint(0, 9)) for i in range(self._random_digits)]
-        return "".join(dig)
+        return ("".join(dig), "nope") # type: ignore
     
 TAG_TYPES = _Tag.__subclasses__()
 
