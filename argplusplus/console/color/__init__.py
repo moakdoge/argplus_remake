@@ -1,6 +1,6 @@
 import re
 
-from argplusplus.console.color._tag import _RandomTag, _Tag
+from argplusplus.console.color._tag import TAG_TYPES, _RandomTag, _Tag
 
 TAG_RE = re.compile(r"\[(/?)([^\]]+)\]")
 from ._color import _FormattingColor
@@ -62,14 +62,13 @@ def _find_tags(text: str) -> list[_Tag]:
             name = name.lstrip("bg")
         name = name.strip(" ")
 
+        args=(full, name, closing or name == "/", match.start(), match.end(),text[match.start():match.end()], bg)
 
-        if name.startswith("random:"):
-            t = _RandomTag(full, name, closing or name == "/", match.start(), match.end(),
-                 content=text[match.start():match.end()], background=bg).fix()
-        else:
-            t = _Tag(full, name, closing or name == "/", match.start(), match.end(),
-                    content=text[match.start():match.end()], background=bg)
-        tags.append(t)
+        for _t in TAG_TYPES:
+            if _t.valid(name):
+                tags.append(_t(*args))
+                break
+        
 
     return tags
 
@@ -80,16 +79,16 @@ def _process_tags(st: str) -> str:
     out: list[str] = []
     last = 0
     open_clrs: list[_FormattingColor] = []
-
     for tag in tags:
-        out.append(st[last:tag.start])
         last = tag.end
-
-
         if hasattr(tag, "get"):
-            out.append(tag.get())
+            out.append(tag.get()) # type: ignore
             continue
-        
+        out.append(st[last:tag.start])
+
+
+
+
         if tag.closing:
             c=_find_color(tag.name, background=tag.background)
             if c and (c.force_bg == tag.background):
@@ -107,6 +106,7 @@ def _process_tags(st: str) -> str:
         if not clr:
             out.append(st[tag.start:tag.end])
             continue
+
         open_clrs.append(clr)
         clr.force_bg = tag.background
         out.append(clr.get())
