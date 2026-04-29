@@ -6,7 +6,7 @@ from argplusplus.console.input.keys import KeyReader
 from argplusplus.console.input.progress_bar import ProgressBar
 from argplusplus.console.input.spinner import Spinner
 from argplusplus.console.types.widgets import SpinnerType
-
+from rich.console import Console
 
 class OutputConsole:
     def __init__(self) -> None:
@@ -108,6 +108,15 @@ class OutputConsole:
         self.raw_print(new)
         if newline:
             self.newline()
+
+    def _format_text(self, text: str) -> str:
+        c=Console(record=True, force_terminal=True)
+        c.begin_capture()
+        c.print(text)
+        return c.end_capture()
+
+    def pprint(self, pretty_text: str, end: str | None = None):
+        self.print(self._format_text(pretty_text), end=end)
 
     def newline(self):
         self.stdout.write(self.nl)

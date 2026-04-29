@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from configparser import ParsingError
+import json
 from pathlib import Path
 import sys
 import threading
@@ -9,6 +10,7 @@ from typing import Annotated, Any
 import argplusplus as argpp
 from argplusplus.command import Global
 from argplusplus.command_context import CommandContext
+import argplusplus.console.color as clr
 from argplusplus.parser import _class, flag
 from argplusplus.parser._alises import Alias
 from argplusplus.parser.exceptions import ParsingException
@@ -25,11 +27,12 @@ def test():
     manager.run("example", stdout=False)
     with manager.console.progress_bar(label="Installing packages..") as progress:
         for i, pack in enumerate(sys.modules):
-            progress.update(label=f"Installing {pack}", new=i/(len(sys.modules)-1))
+            st=manager.console._format_text(f"[red]Installing {pack}[/red]").strip("\n")
+            progress.update(label=st,new=i/(len(sys.modules)-1))
             time.sleep(0.1)
 
-@manager.after()
-def after(context: CommandContext):
-    print("output:", context.pipes.stdout)
+@manager.register("work")
+def work(t: str = "[red]hi[/red]"):
+    print(clr._process_tags(t))
 
 manager.process()
