@@ -1,6 +1,7 @@
 import re
+import secrets
 
-from argplusplus.console.color._tag import TAG_TYPES, _RandomTag, _Tag
+from argplusplus.console.color._tag import TAG_TYPES, VARIABLES, _RandomTag, _Subin, _Tag
 
 TAG_RE = re.compile(r"\[(/?)([^\]]+)\]")
 from ._color import _FormattingColor
@@ -49,13 +50,15 @@ def _find_color(color_name:str, background: bool=False) -> _FormattingColor | No
     return None
 
 
+ESC =re.compile(r"(\[{2,})(.*?)(\]{2,})")
 def _find_tags(text: str) -> list[_Tag]:
     tags: list[_Tag] = []
 
+    saved: list[str] = []
     for match in TAG_RE.finditer(text):
         full = match.group(0)
         closing = bool(match.group(1))
-        name = match.group(2).lower()
+        name = match.group(2)
         bg = name.startswith("background") or name.startswith("bg")
         if bg:
             name = name.lstrip("background")
@@ -87,20 +90,32 @@ def _find_last_visible_chunk(parts: list[str]) -> tuple[int | None, str]:
     return None, ""
 
 def _process_tags(st: str) -> str:
+    saved = []
+    PLACEHOLER_LEFT=str(secrets.token_hex(6))
+    PLACEHOLER_RIGHT=str(secrets.token_hex(6))
+    def repl(m: re.Match[str]) -> str:
+        left, inner, right = m.groups()
+        saved.append(f"[{m.group(1)}]")
+        return f"{PLACEHOLER_LEFT*(len(left)-1)}{inner}{PLACEHOLER_RIGHT*(len(right)-1)}"
+
+    st = ESC.sub(repl, st)
     tags = _find_tags(st)
     out: list[str] = []
     last = 0
     open_clrs: list[_FormattingColor] = []
     for tag in tags:
+        if isinstance(tag, _Subin):
+            continue
         out.append(st[last:tag.start])
         last = tag.end
+
         if tag.closing:
             if hasattr(tag, "get") and not tag.__class__ is _Tag:
                 chunk_idx, closing_text = _find_last_visible_chunk(out)
                 output = tag.get(closing=closing_text) # type: ignore
                 if isinstance(output, tuple):
                     if chunk_idx is not None:
-                        out[chunk_idx] = output[1]
+                        out[chunk_idx] = output[1] if not tag._format else _process_tags(output[1])
                     out.append(output[0])
                 else:
                     out.append(output)
@@ -120,6 +135,8 @@ def _process_tags(st: str) -> str:
             o=tag.get()
             if isinstance(o, tuple):
                 o=o[0]
+            if tag._format:
+                o = _process_tags(o)
             out.append(o) # type: ignore
             continue
         clr = _find_color(tag.name)
@@ -131,5 +148,5 @@ def _process_tags(st: str) -> str:
         clr.force_bg = tag.background
         out.append(clr.get())
     out.append(st[last:])
-
-    return "".join(out)
+    VARIABLES.clear()
+    return "".join(out).replace(PLACEHOLER_LEFT, "[").replace(PLACEHOLER_RIGHT, "]")

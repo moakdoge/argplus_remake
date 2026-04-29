@@ -32,7 +32,7 @@ def test():
             time.sleep(0.1)
 
 @manager.register("work")
-def work(t: str = "[?random:6][bold]wow[/bold][/?random:9]"):
+def work(t: str = "[[uuid]] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
     print(clr._process_tags(t))
 
 manager.process()
