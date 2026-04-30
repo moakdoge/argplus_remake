@@ -1,7 +1,7 @@
 import re
 import secrets
 
-from argplusplus.console.color._tag import TAG_TYPES, VARIABLES, _RandomTag, _Subin, _Tag
+from argplusplus.console.color._tag import TAG_TYPES, VARIABLES, _RandomTag, _Subin, _Tag, _While, _jmp
 
 TAG_RE = re.compile(r"\[(/?)((?:[^\[\]]|\[[^\[\]]*\])*)\]")
 from ._color import _FormattingColor
@@ -162,16 +162,41 @@ def process_tags(st: str) -> str:
     out: list[str] = []
     last = 0
     open_clrs: list[_FormattingColor] = []
-    for tag in tags:
-        if isinstance(tag, _Subin):
+    while_stack: list[_While] = []
+    i = 0
+    while i < len(tags):
+        tag = tags[i]
+        #print(tag)
+        if isinstance(tag, _jmp):
+            i += int(tag.get())
             continue
+        if isinstance(tag, _While) and not tag.closing:
+            tag._tag_index = i
+            while_stack.append(tag)
         out.append(st[last:tag.start])
         last = tag.end
         if tag.closing:
             if hasattr(tag, "get") and not tag.__class__ is _Tag:
+                if isinstance(tag, _While):
+                    if not while_stack:
+                        raise Exception("while closing tag found without a matching opening tag")
+                    opening = while_stack[-1]
+                    tag._loop_index = opening._tag_index
+                    tag._loop_reset = opening.end
+                    tag._while_expr = opening._expr
                 chunk_idx, closing_text = _find_last_visible_chunk(out)
                 output = tag.get(closing=closing_text) # type: ignore
                 if isinstance(output, tuple):
+                    if isinstance(tag, _While) and getattr(tag, "_should_loop", False):
+                        loop_index = getattr(tag, "_loop_index", None)
+                        if loop_index is None:
+                            raise Exception("while loop missing opening tag index")
+                        i = loop_index
+                        last = getattr(tag, "_loop_reset", last)
+                        continue
+                    if isinstance(tag, _While):
+                        while_stack.pop()
+
                     if chunk_idx is not None:
                         out[chunk_idx] = output[1] if not tag._format else process_tags(output[1])
                     out.append(output[0])
@@ -188,6 +213,7 @@ def process_tags(st: str) -> str:
             #get all the existing tags
             for clr in open_clrs:
                 out.append(clr.get())
+            i+=1
             continue
         if hasattr(tag, "get") and not tag.__class__ is _Tag:
             o=tag.get()
@@ -196,15 +222,17 @@ def process_tags(st: str) -> str:
             if tag._format:
                 o = process_tags(o)
             out.append(o) # type: ignore
+            i+=1
             continue
         clr = _find_color(tag.name)
         if not clr:
             out.append(st[tag.start:tag.end])
+            i+=1
             continue
 
         open_clrs.append(clr)
         clr.force_bg = tag.background
         out.append(clr.get())
+        i+=1
     out.append(st[last:])
-    VARIABLES.clear()
     return "".join(out).replace(PLACEHOLER_LEFT, "[").replace(PLACEHOLER_RIGHT, "]")

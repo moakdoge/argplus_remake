@@ -3,6 +3,7 @@ from configparser import ParsingError
 import json
 from pathlib import Path
 import sys
+import textwrap
 import threading
 import time
 from typing import Annotated, Any
@@ -32,7 +33,24 @@ def test():
             time.sleep(0.1)
 
 @manager.register("work")
-def work(t: str = "[$x:hello world][@gt:[@len:[$x]]:100] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
-    manager.console.pprint(t)
+def work(t: str = ''):
+    if t == '':
+        t = '''
+[$x:]
+[while:[@lt:[@len:[$x]]:[?now:%H]]]
+    [$x:[$x]#]
+[/while]
+[$y:[$x]]
+[$test:woooooooooooooooooooooooooooooooo]
+[while:[@lt:[@len:[$y]]:25]]
+    [$y:[$y]-]
+    [$test:[@sub:[$test]:1]]
+[/while]
+[$test]
+
+
+{[$y]} hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]
+        '''
+    manager.console.pprint(" ".join(textwrap.dedent(t).split()))
 
 manager.process()

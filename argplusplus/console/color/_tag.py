@@ -92,15 +92,18 @@ class _AssignVariable(_BaseTag):
         return False
     
     def __post_init__(self):
-        import argplusplus.console.color as clr
-        global VARIABLES
         e = self.name.removeprefix("$")
-        name, value = e.split(":")
-        VARIABLES[name] = clr.process_tags(str(value))
+        name, _, value = e.partition(":")
+        self._var_name = name
+        self._var_value = value
 
     
     def get(self, closing: str | None = None) -> str:
+        import argplusplus.console.color as clr
+        global VARIABLES
+        VARIABLES[self._var_name] = clr.process_tags(str(self._var_value))
         return ""
+    
 _existing_ifs: list["_If"] = []
 @dataclass()
 class _If(_BaseTag):
@@ -114,25 +117,87 @@ class _If(_BaseTag):
         return False
     
     def __post_init__(self):
-        import argplusplus.console.color as clr
-        global VARIABLES
         e = self.name.removeprefix("if")
         name, _, value = e.partition(":")
-        self.val = clr.process_tags(value).strip("\n")
+        # store the raw expression so it can be evaluated at closing time
+        # (this allows variable changes inside the block to affect the condition)
+        self._expr = value
         if not self.closing:
             _existing_ifs.append(self)
     def get(self, closing: str | None = None) -> tuple[str, str]:
         import argplusplus.console.color as clr
         if closing is None:
             return "", ""
+        if len(_existing_ifs) < 1:
+            return clr.process_tags(closing), ""
         ext = _existing_ifs.pop()
-        if len(ext.val) >= 1:
-            proc=clr.process_tags(closing)
+        # evaluate the stored expression now so the condition reflects current state
+        cond = clr.process_tags(ext._expr).strip("\n")
+        if len(cond) >= 1:
+            proc = clr.process_tags(closing)
             return proc, ""
+        return clr.process_tags(closing), ""
+    
+
+@dataclass()
+class _While(_BaseTag):
+    command = "while"
+    _format_type: str = ""
+    _tag_index: int | None = None
+    _loop_index: int | None = None
+    _loop_reset: int | None = None
+    _should_loop: bool = False
+    _while_expr: str | None = None
+    
+    @classmethod
+    def valid(cls, input: str):
+        if input.startswith("while"):
+            return True
+        return False
+    
+    def __post_init__(self):
+        e = self.name.removeprefix("while")
+        name, _, value = e.partition(":")
+        # store the raw expression so it can be evaluated at closing time
+        # (this allows variable changes inside the block to affect the condition)
+        self._expr = value
+        self._loop_index = None
+    def get(self, closing: str | None = None) -> tuple[str, str]:
+        import argplusplus.console.color as clr
+        if closing is None:
+            return "", ""
+        if self._while_expr is None:
+            raise Exception("while closing tag missing opening while expression")
+        self._should_loop = False
+        
+        # evaluate the stored expression now so the condition reflects current state
+        cond = clr.process_tags(self._while_expr).strip("\n")
+        if len(cond) <= 0:
+            proc = clr.process_tags(closing)
+            return proc, ""
+        self._should_loop = True
         return "", ""
     
 
+@dataclass
+class _Sub(_BaseTag):
+    command = "@sub"
+    def get(self, closing: str | None = None):
+        import argplusplus.console.color as clr
+        _, _, args = self.name.partition(":")
+        left, right = clr.split_top_level(args, ":", maxsplit=1)
 
+        l = clr.process_tags(left)
+        r = clr.process_tags(right)
+
+        try:
+            return str(float(l) - float(r))
+        except:
+            try:
+                s=int((len(l)-1)-float(r))
+                return l[0:s]
+            except Exception as e:
+                return ""
 
 @dataclass
 class _Variable(_BaseTag):
@@ -154,7 +219,7 @@ class _Gt(_BaseTag):
         import argplusplus.console.color as clr 
         x=clr.split_top_level(self.name, ":", maxsplit=2)[1:]
         val1 = clr.process_tags(x[0])
-        val2 = float(x[1])
+        val2 = float(clr.process_tags(x[1]))
         try:
             val1=float(val1)
         except Exception as e:
@@ -163,16 +228,42 @@ class _Gt(_BaseTag):
         if val1 > val2:
             return "1"
         return ""
+    
+@dataclass
+class _Lt(_BaseTag):
+    command: str = "@lt"
+    def get(self, closing : None | str = None) -> str:
+        import argplusplus.console.color as clr 
+        x=clr.split_top_level(self.name, ":", maxsplit=2)[1:]
+        val1 = clr.process_tags(x[0])
+        val2 = float(clr.process_tags(x[1]))
+        try:
+            val1=float(val1)
+        except Exception as e:
+            val1=len(val1)
+        
+        if val1 < val2:
+            return "1"
+        return ""
+    
+@dataclass
+class _jmp(_BaseTag):
+    command: str = "!jmp"
+    def get(self, closing : None | str = None) -> str:
+        import argplusplus.console.color as clr 
+        x=clr.split_top_level(self.name, ":", maxsplit=1)[1:]
+        val2 = int(x[0])
+        return val2 # type: ignore
 @dataclass
 class _Len(_BaseTag):
     command = "@len"
     def __post_init__(self):
-        import argplusplus.console.color as clr
         self._name = self.name.removeprefix("@")
         name, _, val = self._name.partition(":")
-        self._v = clr.process_tags(val)
+        self._expr = val
     def get(self, closing: str | None = None) -> str:
-        return str(len(self._v))
+        import argplusplus.console.color as clr
+        return str(len(clr.process_tags(self._expr)))
 
 
 class _Subin():
