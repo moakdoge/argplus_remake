@@ -35,22 +35,7 @@ def test():
 @manager.register("work")
 def work(t: str = ''):
     if t == '':
-        t = '''
-[$x:]
-[while:[@lt:[@len:[$x]]:[?now:%H]]]
-    [$x:[$x]#]
-[/while]
-[$y:[$x]]
-[$test:woooooooooooooooooooooooooooooooo]
-[while:[@lt:[@len:[$y]]:25]]
-    [$y:[$y]-]
-    [$test:[@sub:[$test]:1]]
-[/while]
-[$test]
-
-
-{[$y]} hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]
-        '''
+        t = '''It is currently [if:[@gt:[?now:%H]:12]][@sub:[?now:%H]:12]:[?now:%M]:[?now:%S] pm[/if][if:[@eq:[?now:%H]:12]]12:[?now:%M]:[?now:%S] pm[/if][if:[@lt:[?now:%H]:12]][?now:%H]:[?now:%M]:[?now:%S] am[/if]'''
     manager.console.pprint(" ".join(textwrap.dedent(t).split()))
 
 manager.process()

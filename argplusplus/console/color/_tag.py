@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 import uuid
 
 
+
+
 @dataclass(slots=True)
 class _Tag:
     raw: str
@@ -40,11 +42,13 @@ class _BaseTag(_Tag):
 
 @dataclass()
 class _RandomTag(_BaseTag):
-    command = "?random:"
+    command: str = "?random:"
     _random_digits: int = 0
     
     def __post_init__(self):
-        self._random_digits = int(self.name.removeprefix(self.command))
+        self.name = self.name.replace(self.command, "")
+        from argplusplus.console.color import process_tags
+        self._random_digits = int(process_tags(self.name))
     
     def get(self, closing: str | None = None) -> str:
         dig = [str(random.randint(0, 9)) for i in range(self._random_digits)]
@@ -53,7 +57,7 @@ class _RandomTag(_BaseTag):
 from datetime import datetime
 @dataclass()
 class _DateTag(_BaseTag):
-    command = "?now"
+    command: str = "?now"
     _format_type: str = ""
     
     @classmethod
@@ -199,6 +203,23 @@ class _Sub(_BaseTag):
             except Exception as e:
                 return ""
 
+               
+@dataclass
+class _Add(_BaseTag):
+    command = "@add"
+    def get(self, closing: str | None = None):
+        import argplusplus.console.color as clr
+        _, _, args = self.name.partition(":")
+        left, right = clr.split_top_level(args, ":", maxsplit=1)
+
+        l = clr.process_tags(left)
+        r = clr.process_tags(right)
+
+        try:
+            return str(float(l) + float(r))
+        except:
+            return str(l)+str(r)
+
 @dataclass
 class _Variable(_BaseTag):
     command = "$"
@@ -228,7 +249,31 @@ class _Gt(_BaseTag):
         if val1 > val2:
             return "1"
         return ""
+
+@dataclass
+class _Eq(_BaseTag):
+    command: str = "@eq"
+    def get(self, closing : None | str = None) -> str:
+        import argplusplus.console.color as clr 
+        x=clr.split_top_level(self.name, ":", maxsplit=2)[1:]
+        val1 = clr.process_tags(x[0])
+        val2 = clr.process_tags(x[1])        
+        if val1 == val2:
+            return "1"
+        return ""
     
+
+@dataclass
+class _Not(_BaseTag):
+    command: str = "@not"
+    def get(self, closing : None | str = None) -> str:
+        import argplusplus.console.color as clr 
+        x=clr.split_top_level(self.name, ":", maxsplit=1)[1:]
+        val1 = clr.process_tags(x[0])
+        
+        if len(val1) == 0:
+            return "1"
+        return ""
 @dataclass
 class _Lt(_BaseTag):
     command: str = "@lt"
@@ -241,7 +286,7 @@ class _Lt(_BaseTag):
             val1=float(val1)
         except Exception as e:
             val1=len(val1)
-        
+
         if val1 < val2:
             return "1"
         return ""
