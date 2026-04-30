@@ -6,7 +6,6 @@ import sys
 import textwrap
 import threading
 import time
-from typing import Annotated, Any
 
 import argplusplus as argpp
 from argplusplus.command import Global
