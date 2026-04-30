@@ -3,7 +3,7 @@ import secrets
 
 from argplusplus.console.color._tag import TAG_TYPES, VARIABLES, _RandomTag, _Subin, _Tag
 
-TAG_RE = re.compile(r"\[(/?)([^\]]+)\]")
+TAG_RE = re.compile(r"\[(/?)((?:[^\[\]]|\[[^\[\]]*\])*)\]")
 from ._color import _FormattingColor
 
 COLORS = [
@@ -49,29 +49,70 @@ def _find_color(color_name:str, background: bool=False) -> _FormattingColor | No
             return clr
     return None
 
+ESC = re.compile(r"(?<!\[)(\[{2,})(.*?)(\]{2,})(?!\])")
+def iter_tag_spans(text: str):
+    i = 0
 
-ESC =re.compile(r"(\[{2,})(.*?)(\]{2,})")
+    while i < len(text):
+        if text[i] != "[":
+            i += 1
+            continue
+
+        start = i
+        i += 1
+        depth = 1
+
+        while i < len(text):
+            if text[i] == "[":
+                depth += 1
+            elif text[i] == "]":
+                depth -= 1
+
+                if depth == 0:
+                    end = i + 1
+                    yield start, end, text[start:end]
+                    i = end
+                    break
+
+            i += 1
+        else:
+            # unmatched [
+            break
 def _find_tags(text: str) -> list[_Tag]:
     tags: list[_Tag] = []
 
-    saved: list[str] = []
-    for match in TAG_RE.finditer(text):
-        full = match.group(0)
-        closing = bool(match.group(1))
-        name = match.group(2)
+    for start, end, full in iter_tag_spans(text):
+        inner = full[1:-1]
+
+        closing = inner.startswith("/")
+        if closing:
+            inner = inner[1:]
+
+        name = inner.strip(" ")
+
         bg = name.startswith("background") or name.startswith("bg")
         if bg:
-            name = name.lstrip("background")
-            name = name.lstrip("bg")
+            if name.startswith("background"):
+                name = name[len("background"):]
+            elif name.startswith("bg"):
+                name = name[len("bg"):]
+
         name = name.strip(" ")
 
-        args=(full, name, closing or name == "/", match.start(), match.end(),text[match.start():match.end()], bg)
+        args = (
+            full,
+            name,
+            closing or name == "/",
+            start,
+            end,
+            full,
+            bg,
+        )
 
         for _t in TAG_TYPES:
             if _t.valid(name):
                 tags.append(_t(*args))
                 break
-        
 
     return tags
 
@@ -89,7 +130,7 @@ def _find_last_visible_chunk(parts: list[str]) -> tuple[int | None, str]:
             return idx, visible
     return None, ""
 
-def _process_tags(st: str) -> str:
+def process_tags(st: str) -> str:
     saved = []
     PLACEHOLER_LEFT=str(secrets.token_hex(6))
     PLACEHOLER_RIGHT=str(secrets.token_hex(6))
@@ -115,7 +156,7 @@ def _process_tags(st: str) -> str:
                 output = tag.get(closing=closing_text) # type: ignore
                 if isinstance(output, tuple):
                     if chunk_idx is not None:
-                        out[chunk_idx] = output[1] if not tag._format else _process_tags(output[1])
+                        out[chunk_idx] = output[1] if not tag._format else process_tags(output[1])
                     out.append(output[0])
                 else:
                     out.append(output)
@@ -136,7 +177,7 @@ def _process_tags(st: str) -> str:
             if isinstance(o, tuple):
                 o=o[0]
             if tag._format:
-                o = _process_tags(o)
+                o = process_tags(o)
             out.append(o) # type: ignore
             continue
         clr = _find_color(tag.name)

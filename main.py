@@ -27,12 +27,12 @@ def test():
     manager.run("example", stdout=False)
     with manager.console.progress_bar(label="Installing packages..") as progress:
         for i, pack in enumerate(sys.modules):
-            st=manager.console._format_text(f"[red]Installing {pack}[/red]").strip("\n")
+            st=manager.console.pprint(f"[red]Installing {pack}[/red]")
             progress.update(label=st,new=i/(len(sys.modules)-1))
             time.sleep(0.1)
 
 @manager.register("work")
-def work(t: str = "[[uuid]] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
-    print(clr._process_tags(t))
+def work(t: str = "[$test:[uuid]] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
+    manager.console.pprint(t)
 
 manager.process()

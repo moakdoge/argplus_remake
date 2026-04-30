@@ -92,10 +92,11 @@ class _AssignVariable(_BaseTag):
         return False
     
     def __post_init__(self):
+        import argplusplus.console.color as clr
         global VARIABLES
         e = self.name.removeprefix("$")
         name, value = e.split(":")
-        VARIABLES[name] = str(value)
+        VARIABLES[name] = clr.process_tags(str(value))
 
     
     def get(self, closing: str | None = None) -> str:
