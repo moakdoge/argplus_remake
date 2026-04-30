@@ -32,7 +32,7 @@ def test():
             time.sleep(0.1)
 
 @manager.register("work")
-def work(t: str = "[$test:[uuid]] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
+def work(t: str = "[$x:hello world][@gt:[@len:[$x]]:100] hey go check out [link]https://google.com[/link] it was scraped on [red][bold][?now:%D][/bold][/red]"):
     manager.console.pprint(t)
 
 manager.process()

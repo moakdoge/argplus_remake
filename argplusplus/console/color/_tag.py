@@ -101,12 +101,44 @@ class _AssignVariable(_BaseTag):
     
     def get(self, closing: str | None = None) -> str:
         return ""
+_existing_ifs: list["_If"] = []
+@dataclass()
+class _If(_BaseTag):
+    command = "if"
+    _format_type: str = ""
     
+    @classmethod
+    def valid(cls, input: str):
+        if input.startswith("if"):
+            return True
+        return False
+    
+    def __post_init__(self):
+        import argplusplus.console.color as clr
+        global VARIABLES
+        e = self.name.removeprefix("if")
+        name, _, value = e.partition(":")
+        self.val = clr.process_tags(value).strip("\n")
+        if not self.closing:
+            _existing_ifs.append(self)
+    def get(self, closing: str | None = None) -> tuple[str, str]:
+        import argplusplus.console.color as clr
+        if closing is None:
+            return "", ""
+        ext = _existing_ifs.pop()
+        if len(ext.val) >= 1:
+            proc=clr.process_tags(closing)
+            return proc, ""
+        return "", ""
+    
+
 
 
 @dataclass
 class _Variable(_BaseTag):
     command = "$"
+
+    
     def __post_init__(self):
         self._name = self.name.removeprefix("$")
         
@@ -114,8 +146,33 @@ class _Variable(_BaseTag):
     def get(self, closing: str | None = None) -> str:
         if self._name in VARIABLES:
             return VARIABLES[self._name]
-        raise AttributeError(f"Variable {self._name} doesnt exist")
-    
+        return ""
+@dataclass
+class _Gt(_BaseTag):
+    command: str = "@gt"
+    def get(self, closing : None | str = None) -> str:
+        import argplusplus.console.color as clr 
+        x=clr.split_top_level(self.name, ":", maxsplit=2)[1:]
+        val1 = clr.process_tags(x[0])
+        val2 = float(x[1])
+        try:
+            val1=float(val1)
+        except Exception as e:
+            val1=len(val1)
+        
+        if val1 > val2:
+            return "1"
+        return ""
+@dataclass
+class _Len(_BaseTag):
+    command = "@len"
+    def __post_init__(self):
+        import argplusplus.console.color as clr
+        self._name = self.name.removeprefix("@")
+        name, _, val = self._name.partition(":")
+        self._v = clr.process_tags(val)
+    def get(self, closing: str | None = None) -> str:
+        return str(len(self._v))
 
 
 class _Subin():

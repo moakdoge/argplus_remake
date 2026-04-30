@@ -78,6 +78,24 @@ def iter_tag_spans(text: str):
         else:
             # unmatched [
             break
+def split_top_level(s: str, sep: str = ":", maxsplit: int = -1) -> list[str]:
+    out: list[str] = []
+    start = 0
+    depth = 0
+    splits = 0
+
+    for i, ch in enumerate(s):
+        if ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+        elif ch == sep and depth == 0 and (maxsplit < 0 or splits < maxsplit):
+            out.append(s[start:i])
+            start = i + 1
+            splits += 1
+
+    out.append(s[start:])
+    return out
 def _find_tags(text: str) -> list[_Tag]:
     tags: list[_Tag] = []
 
@@ -149,7 +167,6 @@ def process_tags(st: str) -> str:
             continue
         out.append(st[last:tag.start])
         last = tag.end
-
         if tag.closing:
             if hasattr(tag, "get") and not tag.__class__ is _Tag:
                 chunk_idx, closing_text = _find_last_visible_chunk(out)
