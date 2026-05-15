@@ -6,7 +6,7 @@ import sys
 import textwrap
 import threading
 import time
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Any, Literal, Optional
 
 import argplusplus as argpp
 from argplusplus.command import Global
@@ -17,12 +17,13 @@ from argplusplus.parser._alises import Alias
 from argplusplus.parser.exceptions import ParsingException
 
 manager = argpp.manager.CommandManager("pyu", make_executable=True)
+playfulness = manager.group("example", "command")
 
-@manager.register("example")
-def example(x):
+@playfulness.register("list")
+def example(*x: int):
     '''hi world'''
     
-    print(x+4)
+    print(sum(x)+4)
     
     
     

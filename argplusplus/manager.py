@@ -19,6 +19,7 @@ from argplusplus.command_context import CommandContext, Pipes
 from argplusplus.console import Console
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
+from argplusplus.group import CommandGroup
 from argplusplus.parser._alises import Alias
 from argplusplus.terminal_properties import ManagerContext
 from argplusplus.typingutils.co import clean_tp
@@ -50,6 +51,10 @@ class CommandManager:
             self._chabang()
         pass
 
+    def group(self, *commands: str) -> CommandGroup:
+        grp = CommandGroup(commands, self)
+        return grp
+    
     def _chabang(self):
         '''will AUTOMATICALLY add a chabang to whatever file this is run AND makes the file executable'''
         file: str | None = getattr(sys.modules['__main__'], '__file__', None)

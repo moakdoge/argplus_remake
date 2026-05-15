@@ -147,6 +147,20 @@ def test_basic_command_with_aliases_and_lists(manage, capsys):
     manage.run("e", "0,69,0,0")
     assert "error" not in capsys.readouterr().out
     assert called is True
+
+
+def test_command_group_registers_subcommand(manage, capsys):
+    called = False
+    group = manage.group("parent")
+
+    @group.register("child")
+    def example():
+        nonlocal called
+        called = True
+
+    manage.run("parent", "child")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
     
 
 

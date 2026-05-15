@@ -18,9 +18,6 @@ class Argument:
     comment: str = ""
 
     def _convert_type(self, value: str):
-        if self.verradic:
-            return str(value)
-
         if self.flag:
             return BoolPlus.check(value)
 

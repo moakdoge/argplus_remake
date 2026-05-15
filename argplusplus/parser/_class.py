@@ -124,8 +124,6 @@ class Parser:
                     raise InvalidArgument("Invalid argument!")
                 continue
 
-
-
             if not argument.flag and flag:
                 raise ValueError("Must be marked as flag!")
             if get_origin(argument.tp) in (list, tuple):
