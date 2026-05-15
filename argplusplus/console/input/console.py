@@ -1,3 +1,4 @@
+import re
 import sys, shutil
 import tty
 import termios
@@ -111,7 +112,18 @@ class OutputConsole:
             self.newline()
 
     def format(self, text: str) -> str:
-        return clr.process_tags(text)
+        pattern = r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|-?\d+(?:\.\d+)?'
+
+        def repl(match):
+            text = match.group()
+
+            if text[0] in "\"'":
+                return f"[yellow]{text}[/yellow]"
+            else:
+                return f"[cyan]{text}[/cyan]"
+
+        result = re.sub(pattern, repl, text)
+        return clr.process_tags(result)
 
     def pprint(self, pretty_text: str, end: str | None = None):
         self.print(self.format(pretty_text), end=end)

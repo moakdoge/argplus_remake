@@ -22,3 +22,7 @@ class Globals:
         return f"<Globals {parts}>"
     def __contains__(self, item):
         return item in self._values
+    def get(self, item: str, default: Any = None):
+        if item in self:
+            return self[item]
+        return default

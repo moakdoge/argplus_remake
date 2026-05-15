@@ -1,0 +1,18 @@
+{
+  "pipes": {},
+  "profiles": [],
+  "tasks": {
+    "da": {
+      "cmd": "mads",
+      "tags": [],
+      "timeout": 0
+    },
+    "damads": {
+      "cmd": "ie",
+      "tags": [
+        "awjdnefw"
+      ],
+      "timeout": 0
+    }
+  }
+}

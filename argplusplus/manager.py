@@ -348,7 +348,7 @@ class CommandManager:
         try:
             return self._process(args)
         except exceptions.ParsingException as e:
-           print(e)
+           self.console.pprint(f"[red]{e}[/red]")
            self.quit(1)
            pass
         self.quit()

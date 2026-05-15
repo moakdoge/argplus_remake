@@ -155,5 +155,5 @@ def convert_value(value: str, tp: Any):
         return tp(value)
     except Exception:
         raise InvalidArgumentType(
-            f"Value {value!r} cannot be coerced to {tp!r}"
+            f"Value {value!r} cannot be coerced to {clean_tp(tp)}"
         )
