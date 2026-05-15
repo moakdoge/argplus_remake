@@ -15,6 +15,7 @@ class Command:
     sig: inspect.Signature
     author: str = "N/A"
     children: dict[str, "Command"] = field(default_factory=dict)
+    hidden: bool = False
     
     @cached_property
     def description(self):

@@ -18,11 +18,11 @@ class CommandGroup:
             self.commands = self.commands.split(" ")
         self.commands = list(self.commands)
     
-    def register(self, *commands: str, author: str = "", aliases: tuple[str, ...] = ()) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def register(self, *commands: str, author: str = "", aliases: tuple[str, ...] = (), hidden: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             expanded: list[str] = list(self.commands[:])
             expanded.extend(list(commands))
-            self.manager.register(*expanded, author=author, aliases=aliases)(func)
+            self.manager.register(*expanded, author=author, aliases=aliases,hidden=hidden)(func)
             return func
         return decorator    
     
