@@ -39,7 +39,8 @@ class HelpModule:
             return list(chain.chain)
         return list(chain)
     
-    def help(self, chain: Command | list[str] | None = None):
+    def help(self, chain: Command | list[str] | None = None, show_hidden: bool = False):
+        '''Returns the help text for a chain.'''
         #get the first layer
         chain = self._chain(chain)
         lines = [
@@ -54,7 +55,8 @@ class HelpModule:
         if chain is None or len(chain) < 1:    
             max_len = max(len(i.spec.parts[0]) for i in self.manager._real_cmds) * 2
             for command in self.manager._real_cmds:
-                
+                if command.hidden and not show_hidden:
+                    continue
                 primary = command.chain[0] #get the primary argument
                 if primary in seen_commands:
                     continue

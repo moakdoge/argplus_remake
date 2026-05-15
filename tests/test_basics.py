@@ -96,6 +96,18 @@ def test_basic_command_with_verradics(manage, capsys):
     assert "error" not in capsys.readouterr().out
     assert called is True
 
+def test_basic_command_with_verradics_non_str(manage, capsys):
+    called = False
+    @manage.register("example")
+    def example(*x: int):
+        nonlocal called
+        assert x == (1, 2, 3)
+        called = True
+
+    manage.run("example", "1", "2", "3")
+    assert "error" not in capsys.readouterr().out
+    assert called is True
+
 def test_basic_command_with_verradics_and_kwargs(manage, capsys):
     called = False
     @manage.register("example")

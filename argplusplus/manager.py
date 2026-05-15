@@ -190,7 +190,7 @@ class CommandManager:
             for ali in command.spec.aliases:
                 cp = command.chain.copy()
                 cp[-1] = ali
-                _options.add(" ".join(command.chain))
+                _options.add(" ".join(command.chain[0:len(chain)]))
         return self._suggest(" ".join(chain), list(_options))
     
     def _find_partial(self, chain: list[str] | tuple[str, ...]) -> tuple[Command, ...] | None:
@@ -254,7 +254,7 @@ class CommandManager:
             except Exception as e:
                 pass
             
-            print(self.help.help(self._main_parser._keywords))
+            print(self.help(self._main_parser._keywords))
             return
         
         #process

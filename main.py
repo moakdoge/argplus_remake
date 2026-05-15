@@ -19,7 +19,7 @@ from argplusplus.parser.exceptions import ParsingException
 manager = argpp.manager.CommandManager("pyu", make_executable=True)
 playfulness = manager.group("example", "command")
 
-@playfulness.register("list")
+@playfulness.register("list", hidden=True)
 def example(*x: int):
     '''hi world'''
     
