@@ -4,6 +4,8 @@ from types import UnionType
 from pathlib import Path
 from enum import Enum
 
+from numpy import isin
+
 from argplusplus.parser._custom_bool import BoolPlus
 from argplusplus.parser.exceptions import InvalidArgumentType
 from argplusplus.typingutils.custom_type import CustomType
@@ -56,8 +58,9 @@ def convert_value(value: str, tp: Any):
     origin = get_origin(tp)
     args = get_args(tp)
     
-    if issubclass(tp, CustomType):
-        return tp.process(value)
+    if isinstance(tp, type):
+        if issubclass(tp, CustomType):
+            return tp.process(value)
 
     if tp is Any or tp is _empty:
         return coerce_auto(value)
