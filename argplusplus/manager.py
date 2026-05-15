@@ -39,7 +39,8 @@ class CommandManager:
         self._command_tree = {}
         self._real_cmds: list[Command] = []
         self._globals: list[Global] = [
-            Global("help", None, True, aliases=("h",))
+            Global("help", None, True, aliases=("h",)),
+            Global("hidden", None, True, aliases=("hid",))
         ]
         self.globals = Globals()
         self.help: HelpModule = HelpModule(self)
@@ -51,9 +52,7 @@ class CommandManager:
         self.console: Console = Console()
         if make_executable:
             self._chabang()
-            
-        #handle creating the --hidden global
-        self.define_global(name="hidden", flag=True)
+        
         pass
 
     def group(self, *commands: str) -> CommandGroup:
@@ -253,8 +252,10 @@ class CommandManager:
         self._main_parser = _class.Parser(args) #create core parser
         self._main_parser._globals = self._create_globals()
         self._main_parser.add(self._specs)
-        hidden = False
-        if "--help" in args:
+        opt = self._main_parser.process()
+        hidden = self._main_parser.processed_globals.get("hidden", False)
+        help = self._main_parser.processed_globals.get("help", False)
+        if help:
             try:
                 self._main_parser.process()
             except Exception as e:
@@ -264,7 +265,7 @@ class CommandManager:
             return
         
         #process
-        opt = self._main_parser.process()
+
         print(self._main_parser.processed_globals)
         hidden = False
 
@@ -283,13 +284,13 @@ class CommandManager:
             except Exception as e:
                 pass
             
-            print(self.help(self._main_parser._keywords))
+            print(self.help(self._main_parser._keywords, show_hidden=hidden))
             return
 
         #look for command
         command = self._find(opt.cmd.parts)
         if command is None:
-            print(self.help())
+            print(self.help(show_hidden=hidden))
             return
         
         _args = []

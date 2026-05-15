@@ -20,7 +20,7 @@ class Parser:
                 self._options = args[1+i:]
                 break
             self._keywords.append(arg)
-        self._process_globals(self._options)
+        self._mini_process_globals(self._options)
 
 
         valid: None | Command = None
@@ -100,7 +100,28 @@ class Parser:
                 arg_name, arg_value = sp[0], sp[1]
             arg_name = arg_name.lstrip("-")
             yield arg_name, arg_value, flag
-        
+    
+    def _mini_process_globals(self, opt: list[str]):
+        '''Used exclusively for flag globals bc they can be processed later on'''
+        for glob in self._globals:
+            if not glob.flag:
+                continue
+            st = [f"--{glob.name}", f"-{glob.name}"]
+
+            found = any(s for s in st if s in opt)
+            if found:
+                self.processed_globals[glob.name] = True
+                continue
+                
+            p1 = [f"-{a}" for a in glob.aliases]
+            p2 = [f"--{a}" for a in glob.aliases]
+            combined = p1 + p2
+            found_aliases = any(_ for _ in combined if _ in opt)
+            if found_aliases:
+                self.processed_globals[glob.name] = True
+                continue
+            self.processed_globals[glob.name] = False
+            
     def _process_globals(self, opt: list[str], command: Command | None = None):
         '''Returns found globals'''
         for arg_name, arg_value, flag in self._enumerate_options(opt):
@@ -120,6 +141,7 @@ class Parser:
     
                         
     def _process_options(self, opt: list[str], command: Command) -> dict[str, Any]:
+        self._process_globals(opt, command)
         pairs = []
         arg_name: str = ""
         arg_value: str = ""
