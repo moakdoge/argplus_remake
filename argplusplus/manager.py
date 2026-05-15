@@ -26,7 +26,7 @@ from argplusplus.typingutils.co import clean_tp
 from .command import Command, Global
 import argparse
 from functools import cached_property, wraps
-from typing import Annotated, Any, TypeVar, ParamSpec, Callable, get_args, get_origin
+from typing import Annotated, Any, Optional, TypeVar, ParamSpec, Callable, get_args, get_origin
 P = ParamSpec('P')
 R = TypeVar('R')
 from argplusplus.parser import flag, _class, _empty, exceptions
@@ -124,13 +124,16 @@ class CommandManager:
             
             for st, arg in sig.parameters.items():
                 anno = arg.annotation if arg.annotation is not inspect._empty else _empty
+                origin = get_origin(anno)
                 comment = ""
                 _aliases = [""]
-                if get_origin(anno) is Annotated:
+                if origin is Annotated:
                     anno, comment = get_args(anno) 
                     if isinstance(comment, Alias):
                         _aliases = list(comment.args)
                         comment = anno
+                elif origin is Optional:
+                    anno = get_args(origin)[0]
 
                 ver = arg.kind == arg.VAR_POSITIONAL
                 a = flag.Argument(

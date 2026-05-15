@@ -6,6 +6,7 @@ from enum import Enum
 
 from argplusplus.parser._custom_bool import BoolPlus
 from argplusplus.parser.exceptions import InvalidArgumentType
+from argplusplus.typingutils.custom_type import CustomType
 def coerce_auto(value: str):
     for t in (int, float, str):
         try:
@@ -54,6 +55,9 @@ def clean_tp(tp: Any):
 def convert_value(value: str, tp: Any):
     origin = get_origin(tp)
     args = get_args(tp)
+    
+    if issubclass(tp, CustomType):
+        return tp.process(value)
 
     if tp is Any or tp is _empty:
         return coerce_auto(value)
