@@ -6,7 +6,7 @@ import sys
 import textwrap
 import threading
 import time
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 import argplusplus as argpp
 from argplusplus.command import Global
@@ -15,13 +15,16 @@ import argplusplus.console.color as clr
 from argplusplus.parser import _class, flag
 from argplusplus.parser._alises import Alias
 from argplusplus.parser.exceptions import ParsingException
-from argplusplus.typingutils.default_custom_types import ExampleInt
 
 manager = argpp.manager.CommandManager("pyu", make_executable=True)
 
 @manager.register("example")
-def example(x: ExampleInt):
+def example(x):
     '''hi world'''
+    
+    print(x+4)
+    
+    
     
     
     print("x is", x)

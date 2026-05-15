@@ -66,8 +66,29 @@ def convert_value(value: str, tp: Any):
         return coerce_auto(value)
 
     if origin is Annotated:
-        base, *_meta = args
-        return convert_value(value, base)
+        base, *meta = args
+        converted = convert_value(value, base)
+        for item in meta:
+            if (
+                isinstance(item, tuple)
+                and len(item) == 3
+                and item[0] == "rng"
+            ):
+                min_val, max_val = item[1], item[2]
+                try:
+                    if min_val is not None and converted < min_val:
+                        raise InvalidArgumentType(
+                            f"Value {converted!r} is below minimum {min_val!r}"
+                        )
+                    if max_val is not None and converted > max_val:
+                        raise InvalidArgumentType(
+                            f"Value {converted!r} is above maximum {max_val!r}"
+                        )
+                except TypeError as exc:
+                    raise InvalidArgumentType(
+                        f"Value {converted!r} cannot be compared to range bounds"
+                    ) from exc
+        return converted
 
     if origin is Literal:
         for lit in args:
