@@ -16,7 +16,8 @@ class Parser:
         self._keywords = []
         self._options = []
         for i, arg in enumerate(args[1:]):
-            if arg.startswith("-") and (len(arg) - len(arg.lstrip("-")) == 2):
+            dashes = len(arg) - len(arg.lstrip("-"))
+            if arg.startswith("-") and (dashes == 2):
                 self._options = args[1+i:]
                 break
             self._keywords.append(arg)

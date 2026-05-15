@@ -266,7 +266,7 @@ class CommandManager:
         
         #process
 
-        print(self._main_parser.processed_globals)
+       # print(self._main_parser.processed_globals)
         hidden = False
 
         if not opt:

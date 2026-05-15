@@ -51,7 +51,9 @@ class HelpModule:
         command_strings: list[str] = []
         seen_commands: set[tuple[str, ...]] = set()
         spaces: int = 0
-        
+        if len(self.manager._real_cmds) < 1: #NO COMMANDS :(
+            raise exceptions.InvalidCommmand(f"No commands have been registered!")
+            return "\n".join(lines)
         if chain is None or len(chain) < 1:    
             max_len = max(len(i.spec.parts[0]) for i in self.manager._real_cmds) * 2
             for command in self.manager._real_cmds:
@@ -67,10 +69,13 @@ class HelpModule:
                 spaces = max_len - len(primary)
                 command_strings.append(f"\t{primary}")
 
+
             lines.extend([
                 "commands:",
                 *command_strings
             ])
+            if len(command_strings) < 1:
+                lines.append("\tNo commands were found. ")
 
         else:
             exact = False
@@ -118,7 +123,8 @@ class HelpModule:
                 spaces = max_len - len(part_name)
                 command_strings.append(f"\t{part_name}{" "*spaces}")
             if len(command_strings) < 1:
-                command_strings.append("\tN/A")
+                command_strings.append("\tNo commands were found.")
+            
             lines.extend([
                 "commands:" if not exact else "options:",
                 *command_strings
