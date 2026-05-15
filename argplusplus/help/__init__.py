@@ -83,9 +83,9 @@ class HelpModule:
                 parts = []
                 _found = self.manager._find_partial(chain)
                 if not _found:
-                    _close = self.manager._suggest_closest(chain)
+                    _close = self.manager._suggest_closest(chain, hidden=show_hidden)
                     if _close is not None and len(_close) > 0:
-                        closest = self.manager._suggest_closest(chain)
+                        closest = self.manager._suggest_closest(chain, hidden=show_hidden)
                         
                         raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found! Did you mean any of these: {", ".join(closest)}?") # type: ignore
                     else:

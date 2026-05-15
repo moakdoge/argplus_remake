@@ -20,3 +20,5 @@ class Globals:
     def __repr__(self) -> str:
         parts = ", ".join(f"{k}={v}" for k, v in self._values.items())
         return f"<Globals {parts}>"
+    def __contains__(self, item):
+        return item in self._values

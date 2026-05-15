@@ -51,6 +51,9 @@ class CommandManager:
         self.console: Console = Console()
         if make_executable:
             self._chabang()
+            
+        #handle creating the --hidden global
+        self.define_global(name="hidden", flag=True)
         pass
 
     def group(self, *commands: str) -> CommandGroup:
@@ -183,9 +186,11 @@ class CommandManager:
         matches = get_close_matches(name, options, n=3, cutoff=0.6)
         return matches if matches else None    
     
-    def _suggest_closest(self, chain: list[str]) -> list[str] | None:
+    def _suggest_closest(self, chain: list[str], hidden: bool = False) -> list[str] | None:
         _options = set()
         for command in self._real_cmds:
+            if command.hidden and not hidden:
+                continue
             _options.add(" ".join(command.chain))
             for ali in command.spec.aliases:
                 cp = command.chain.copy()
@@ -248,20 +253,23 @@ class CommandManager:
         self._main_parser = _class.Parser(args) #create core parser
         self._main_parser._globals = self._create_globals()
         self._main_parser.add(self._specs)
+        hidden = False
         if "--help" in args:
             try:
                 self._main_parser.process()
             except Exception as e:
                 pass
             
-            print(self.help(self._main_parser._keywords))
+            print(self.help(self._main_parser._keywords, show_hidden=hidden))
             return
         
         #process
         opt = self._main_parser.process()
+        print(self._main_parser.processed_globals)
+        hidden = False
 
         if not opt:
-            print(self.help(self._main_parser._keywords))
+            print(self.help(self._main_parser._keywords, show_hidden=hidden))
             return None
 
         

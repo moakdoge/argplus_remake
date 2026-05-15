@@ -1,6 +1,6 @@
 from functools import cached_property
 import sys
-from typing import Any, get_origin
+from typing import Any, Iterable, get_origin
 from . import _empty
 from .flag import Command, Argument, Result
 from .exceptions import *
@@ -20,6 +20,7 @@ class Parser:
                 self._options = args[1+i:]
                 break
             self._keywords.append(arg)
+        self._process_globals(self._options)
 
 
         valid: None | Command = None
@@ -49,19 +50,19 @@ class Parser:
 
         fx = self._keywords[valid_len:]
         new = []
-        i=0
+        i = 0
         for val in enumerate(fx):
             if i >= len(valid.arguments):
                 raise InvalidArgument(f"Too many parameters! Expected: {len(valid.arguments)}, got: {i+1}")
             new.append(f"-{valid.arguments[i].name}={val[1]}")
             if valid.arguments[i].verradic:
                 continue
-            i+=1
+            i += 1
 
-        self._options = new + self._options
 
-        
-        self._options_tuple: dict[str, Any] = self._process_options(self._options, valid)
+        merged_options = list(self._options)
+        merged_options.extend(new)
+        self._options_tuple = self._process_options(merged_options, valid)
         return Result(
             valid,self._options_tuple
         )
@@ -75,20 +76,12 @@ class Parser:
                 self._commands.add(command)
 
 
-    def _process_options(self, opt: list[str], command: Command) -> dict[str, Any]:
-        pairs = []
-        arg_name: str = ""
-        arg_value: str = ""
-        _current_legit_arg = 0
-        seen = set()
-        vals: dict[str, list] = {}
-        #attempt to recover the args if they're at the staert
-
+    def _enumerate_options(self, opt: list[str]):
         for i, option in enumerate(opt):
             arg_name = option
+            arg_value = ""
             flag = False
             if not option.startswith("-"): #so NOT an argument; just move on
-                _current_legit_arg += 1
                 continue
 
             
@@ -106,7 +99,35 @@ class Parser:
                 sp = option.split("=")
                 arg_name, arg_value = sp[0], sp[1]
             arg_name = arg_name.lstrip("-")
+            yield arg_name, arg_value, flag
+        
+    def _process_globals(self, opt: list[str], command: Command | None = None):
+        '''Returns found globals'''
+        for arg_name, arg_value, flag in self._enumerate_options(opt):
+            argument: Argument | None = None
+            if command is not None:
+                for _arg in command.arguments:
+                    if arg_name == _arg.name or arg_name in _arg.aliases:
+                        arg_name = _arg.name
+                        argument = _arg
 
+            if argument is None: #try to find it in globals instead
+                for glob in self._globals:
+                    glob_name = glob.name.lstrip("-")
+                    if glob_name == arg_name or arg_name in glob.aliases:
+                        self.processed_globals[glob_name] = glob._convert_type(arg_value)
+                        break
+    
+                        
+    def _process_options(self, opt: list[str], command: Command) -> dict[str, Any]:
+        pairs = []
+        arg_name: str = ""
+        arg_value: str = ""
+        seen = set()
+        vals: dict[str, list] = {}
+        #attempt to recover the args if they're at the start
+
+        for arg_name, arg_value, flag in self._enumerate_options(opt):
             #find applicable argument
             argument: Argument | None = None
             for _arg in command.arguments:
