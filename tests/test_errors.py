@@ -34,7 +34,7 @@ def test_missing_param(manage, capsys):
         assert True
         called = True
 
-    with pytest.raises(exceptions.InvalidArgument):
+    with pytest.raises(exceptions.MissingArgument):
         manage.run("example")
     assert called is False
 

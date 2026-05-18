@@ -196,7 +196,7 @@ class Parser:
                 elif arg.flag:
                     new[arg.name] = False
                 else:
-                    raise InvalidArgument(f"Missing parameter '{arg.name}'")
+                    raise MissingArgument(f"Missing parameter '{arg.name}'")
 
         #fix globals
         for glob in self._globals:

@@ -56,8 +56,8 @@ class CommandManager:
         
         pass
 
-    def group(self, *commands: str) -> CommandGroup:
-        grp = CommandGroup(commands, self)
+    def group(self, *commands: str, author: str | None = None) -> CommandGroup:
+        grp = CommandGroup(commands, self, author=author)
         return grp
     
     
@@ -266,7 +266,14 @@ class CommandManager:
         self._main_parser = _class.Parser(args) #create core parser
         self._main_parser._globals = self._create_globals()
         self._main_parser.add(self._specs)
-        opt = self._main_parser.process()
+        opt = None
+        try:
+            opt = self._main_parser.process()
+        except exceptions.MissingArgument:
+            help = self._main_parser.processed_globals.get("help", False)
+            if not help:
+                raise
+            pass
         hidden = self._main_parser.processed_globals.get("hidden", False)
         help = self._main_parser.processed_globals.get("help", False)
         if self._ready:

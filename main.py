@@ -5,16 +5,8 @@ import time
 import argplusplus as argpp
 
 manager = argpp.manager.CommandManager(name="pyu", make_executable=True)
+test_group = manager.group("example", author="moakdoge")
 
-@manager.ready(priority=1)
-def on_ready():
-    print("should be first")
-    pass
-    
-@manager.ready(priority=2)
-def on_ready2():
-    print("should be second")
-    pass
     
 @manager.catch(Exception)
 def catch(exp: Exception):
@@ -28,8 +20,8 @@ def catch(exp: Exception):
     return False
    # return True
     
-@manager.register("hi")
-def hi():
-    raise FileNotFoundError("nope")
-
+@test_group.register("hi")
+def hi(x: int):
+    '''wow'''
+    print("wow")
 manager.process()
