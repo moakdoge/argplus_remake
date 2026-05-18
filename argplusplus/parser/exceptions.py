@@ -19,7 +19,7 @@ class ParsingException(Exception):
                 buffer = 3
                 lines = []
                 lines.append(linecache.getline(filename, line_no).strip())
-                lines = ["\t" + l+" <<< HERE"for l in lines]
+                lines = ["\t" + l+" <-- HERE"for l in lines]
                 processed.append(f"{type(arg).__name__} '{str(arg)}' raised at {func_name} @ Line {line_no}: \n{"\n".join(lines)}")
                 continue
             processed.append(str(arg))

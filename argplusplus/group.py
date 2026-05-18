@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, TypeVar, ParamSpec, Callable
+
 P = ParamSpec('P')
 R = TypeVar('R')
 
@@ -17,11 +18,13 @@ class CommandGroup:
         if isinstance(self.commands, str):
             self.commands = self.commands.split(" ")
         self.commands = list(self.commands)
+        self._registered: list[tuple[tuple[str, ...], Callable]] = []
     
     def register(self, *commands: str, author: str = "", aliases: tuple[str, ...] = (), hidden: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             expanded: list[str] = list(self.commands[:])
             expanded.extend(list(commands))
+            self._registered.append((commands, func))
             self.manager.register(*expanded, author=author, aliases=aliases,hidden=hidden)(func)
             return func
         return decorator    

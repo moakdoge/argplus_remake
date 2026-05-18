@@ -50,6 +50,7 @@ class CommandManager:
         self.description = description
         self.context: ManagerContext
         self.console: Console = Console()
+        self._ready: list[Callable] = []
         if make_executable:
             self._chabang()
         
@@ -58,6 +59,18 @@ class CommandManager:
     def group(self, *commands: str) -> CommandGroup:
         grp = CommandGroup(commands, self)
         return grp
+    
+    
+    def ready(self, *, priority: float = 1) -> Callable[[Callable[P, R]], Callable[P, R]]:
+        def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            @wraps(func)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                return func(*args, **kwargs)
+            func._pri = priority # type: ignore
+            self._ready.append(func)
+            return wrapper
+        return decorator
+
     
     def _chabang(self):
         '''will AUTOMATICALLY add a chabang to whatever file this is run AND makes the file executable'''
@@ -240,6 +253,7 @@ class CommandManager:
     
     def _process(self, args: list[str] | None = None, *, stdout: bool = True, stderr: bool = True) -> CommandContext | None:
         args = args or sys.argv #get arguments
+        
         #process
         if not hasattr(self, "context"):
             self.context = ManagerContext(
@@ -255,6 +269,12 @@ class CommandManager:
         opt = self._main_parser.process()
         hidden = self._main_parser.processed_globals.get("hidden", False)
         help = self._main_parser.processed_globals.get("help", False)
+        if self._ready:
+            self._ready.sort(key=lambda x: getattr(x, "_pri", 100)) # type: ignore
+            for cmd in self._ready:
+                cmd()
+            self._ready = None # type: ignore
+            
         if help:
             try:
                 self._main_parser.process()
