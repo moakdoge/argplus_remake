@@ -3,6 +3,8 @@ import random
 import time
 
 import argplusplus as argpp
+from argplusplus.types import Flag
+
 
 manager = argpp.manager.CommandManager(name="pyu", make_executable=True)
 test_group = manager.group("example", author="moakdoge")
@@ -21,7 +23,7 @@ def catch(exp: Exception):
    # return True
     
 @test_group.register("hi")
-def hi(x: bool, y: bool, z: bool):
+def hi(x: Flag, y: bool, z: bool):
     '''wow'''
     print("wow, x is", x, "y is", y, "z is", z)
 manager.process()

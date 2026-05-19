@@ -1,37 +1,24 @@
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
-import copy
+from contextlib import contextmanager
 from datetime import datetime
 from difflib import get_close_matches
-from imaplib import Commands
-import inspect
-import io
-import os
 from pathlib import Path
-import shutil
-import stat
-import sys
-import tempfile
-from threading import Thread
-import time
-
 from argplusplus._tee import tee_output
 from argplusplus.command_context import CommandContext, Pipes
+from argplusplus.command_generator import CommandGenerator
 from argplusplus.console import Console
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.group import CommandGroup
 from argplusplus.help import HelpModule
-from argplusplus.parser._alises import Alias
 from argplusplus.terminal_properties import ManagerContext
-from argplusplus.typingutils.co import clean_tp
-
 from .command import Command, Global
-import argparse
 from functools import cached_property, wraps
-from typing import Annotated, Any, Optional, TypeVar, ParamSpec, Callable, get_args, get_origin
+from typing import Annotated, Any, TypeVar, ParamSpec, Callable
+from argplusplus.parser import flag, _class, exceptions
+import inspect, os, stat, sys, tempfile
+
 P = ParamSpec('P')
 R = TypeVar('R')
-from argplusplus.parser import flag, _class, _empty, exceptions
 class CommandManager:
     def __init__(self, name: str, *, description: str = "", make_executable: Annotated[bool, "Automatically adds a shabang to your file. AND runs chmod +x on it"] = False) -> None:
         self._main_parser: _class.Parser
@@ -50,6 +37,7 @@ class CommandManager:
         self.description = description
         self.context: ManagerContext
         self.console: Console = Console()
+        self.generator: CommandGenerator = CommandGenerator(self)
         self._ready: list[Callable] = []
         if make_executable:
             self._chabang()
@@ -86,7 +74,6 @@ class CommandManager:
         if file is None:
             raise FileNotFoundError(f"Couldn't find main file {file}")
         pathed = Path(file)
-        import inspect
         with tempfile.NamedTemporaryFile("w", dir=pathed.parent, delete=True) as f:
             contents = ""
             with open(pathed, "r") as _:
@@ -147,40 +134,8 @@ class CommandManager:
     def register(self, *commands: str, author: str="", aliases: tuple[str, ...] | None = None, hidden: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             #start making a tree
-            last = self._command_tree
-            sig = inspect.signature(func)
-            _args = []
-            
-            for st, arg in sig.parameters.items():
-                anno = arg.annotation if arg.annotation is not inspect._empty else _empty
-                origin = get_origin(anno)
-                comment = ""
-                _aliases = [""]
-                if origin is Annotated:
-                    anno, comment = get_args(anno) 
-                    if isinstance(comment, Alias):
-                        _aliases = list(comment.args)
-                        comment = anno
-                elif origin is Optional:
-                    anno = get_args(origin)[0]
-
-                ver = arg.kind == arg.VAR_POSITIONAL
-                a = flag.Argument(
-                    arg.name,
-                    tuple(_aliases), # type: ignore
-                    (anno is bool),
-                    anno, # type: ignore
-                    verradic=ver,
-                    default=arg.default if not arg.default is inspect._empty else _empty,
-                    comment=comment
-                )
-
-                _args.append(a)
-
-            c=flag.Command(parts=tuple(commands), arguments=tuple(_args), comment=func.__doc__ if func.__doc__ else "", aliases=aliases or ("", ))
-            self._real_cmds.append(
-                Command(func, list(commands), author=author, spec=c, sig=sig, hidden=hidden) # type: ignore
-            )
+            _tmp_cmd = self.generator.process(commands, func, aliases, author=author, hidden=hidden)
+            self._real_cmds.append(_tmp_cmd)
             return func
         return decorator
 
@@ -327,39 +282,19 @@ class CommandManager:
             print(self.help(show_hidden=hidden))
             return
         
-        _args = []
-        _kwrds = {}
+        _args, _kwrds = self.generator.gencall(command, opt.args)
 
-        sig = command.sig
-        for a, v in opt.args.items():
-            if a in sig.parameters:
-                arg = sig.parameters[a]
-                if arg.kind == arg.KEYWORD_ONLY:
-                    _kwrds[a] = v
-                else:
-                    if isinstance(v, list):
-                        _args.extend(v)
-                    else:
-                        _args.append(v)
 
 
         context = CommandContext(command, self, _args, _kwrds)
         try:
-
             for before in self._before:
                 before(context)
-
             #generate the pipes
-
             with tee_output(not stdout,not stderr) as (out, err):
                 output = context.command.function(*context.args, **context.kwargs)
-
             stdout_text = out.getvalue()
-            stderr_text = err.getvalue()
-
-            
-
-          
+            stderr_text = err.getvalue()          
             pipes = Pipes(stderr=stderr_text, stdout=stdout_text)
             context.pipes = pipes
             context.output = output

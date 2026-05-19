@@ -10,12 +10,16 @@ from argplusplus.parser import flag, _empty
 @dataclass()
 class Command:
     function: Callable
-    chain: list
-    spec: flag.Command
+    spec: flag.CommandMetadata
     sig: inspect.Signature
     author: str = "N/A"
     children: dict[str, "Command"] = field(default_factory=dict)
     hidden: bool = False
+    
+    
+    @property
+    def chain(self) -> list[str]:
+        return list(self.spec.parts)
     
     @cached_property
     def description(self):

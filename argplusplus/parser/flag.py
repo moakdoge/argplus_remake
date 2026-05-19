@@ -24,7 +24,7 @@ class Argument:
         return convert_value(value, self.tp)
 
 @dataclass(slots=True, unsafe_hash=True)
-class Command:
+class CommandMetadata:
     parts: tuple[str, ...]
     aliases: tuple[str, ...] = () # type: ignore
     arguments: tuple[Argument, ...] = () # type: ignore
@@ -33,5 +33,5 @@ class Command:
 
 @dataclass(frozen=True, slots=True)
 class Result:
-    cmd: Command
+    cmd: CommandMetadata
     args: dict[str, Any]

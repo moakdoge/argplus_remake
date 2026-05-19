@@ -3,14 +3,14 @@ from itertools import takewhile
 import sys
 from typing import Any, Iterable, get_origin
 from . import _empty
-from .flag import Command, Argument, Result
+from .flag import CommandMetadata, Argument, Result
 from .exceptions import *
 class Parser:
     def __init__(self, args: list[str] = sys.argv) -> None:
         self._raw_args = args
         self._globals: list[Argument] = []
         self.processed_globals: dict[str, Any] = {}
-        self._commands: set[Command] = set()
+        self._commands: set[CommandMetadata] = set()
     def _negative_number(self, s: str) -> bool:
         try:
             float(s)
@@ -31,7 +31,7 @@ class Parser:
         self._mini_process_globals(self._options)
 
 
-        valid: None | Command = None
+        valid: None | CommandMetadata = None
         valid_len = -1
 
         for cmd in self._commands:
@@ -75,7 +75,7 @@ class Parser:
             valid,self._options_tuple
         )
     
-    def add(self, *commands: Command | list[Command] | tuple[Command] | set[Command]):
+    def add(self, *commands: CommandMetadata | list[CommandMetadata] | tuple[CommandMetadata] | set[CommandMetadata]):
         for command in commands:
             if isinstance(command, (list, tuple, set)):
                 for cmd in command:
@@ -130,7 +130,7 @@ class Parser:
                 continue
             self.processed_globals[glob.name] = False
             
-    def _process_globals(self, opt: list[str], command: Command | None = None):
+    def _process_globals(self, opt: list[str], command: CommandMetadata | None = None):
         '''Returns found globals'''
         for arg_name, arg_value, flag in self._enumerate_options(opt):
             argument: Argument | None = None
@@ -148,7 +148,7 @@ class Parser:
                         break
     
                         
-    def _process_options(self, opt: list[str], command: Command) -> dict[str, Any]:
+    def _process_options(self, opt: list[str], command: CommandMetadata) -> dict[str, Any]:
         self._process_globals(opt, command)
         pairs = []
         arg_name: str = ""
