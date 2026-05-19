@@ -9,7 +9,8 @@ from argplusplus.console import Console
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.group import CommandGroup
-from argplusplus.help import HelpModule
+from argplusplus.help import HelpException, HelpModule
+from argplusplus.searcher import CommandSearcher
 from argplusplus.terminal_properties import ManagerContext
 from .command import Command, Global
 from functools import cached_property, wraps
@@ -29,6 +30,8 @@ class CommandManager:
             Global("help", None, True, aliases=("h",)),
             Global("hidden", None, True, aliases=("hid",))
         ]
+        self.generator: CommandGenerator = CommandGenerator(self)
+        self.searcher: CommandSearcher = CommandSearcher(self)
         self.globals = Globals()
         self.help: HelpModule = HelpModule(self)
         self._exception_holder: list[ExceptionCatcher] = []
@@ -37,8 +40,8 @@ class CommandManager:
         self.description = description
         self.context: ManagerContext
         self.console: Console = Console()
-        self.generator: CommandGenerator = CommandGenerator(self)
         self._ready: list[Callable] = []
+
         if make_executable:
             self._chabang()
         
@@ -139,53 +142,6 @@ class CommandManager:
             return func
         return decorator
 
-
-    
-    def _find(self, chain: list[str] | tuple[str, ...]) -> Command | None:
-        chain = tuple(chain)
-        for command in self._real_cmds:
-            tupled_chain = tuple(command.chain)
-            if tupled_chain == chain:
-                return command
-            
-            for alias in command.spec.aliases:
-                new = command.chain.copy()
-                new[-1] = alias
-                if tuple(new) == tuple(chain):
-                    return command
-                
-            from difflib import get_close_matches
-
-    def _suggest(self, name: str, options: list[str]) -> list[str] | None:
-        matches = get_close_matches(name, options, n=3, cutoff=0.6)
-        return matches if matches else None    
-    
-    def _suggest_closest(self, chain: list[str], hidden: bool = False) -> list[str] | None:
-        _options = set()
-        for command in self._real_cmds:
-            if command.hidden and not hidden:
-                continue
-            _options.add(" ".join(command.chain))
-            for ali in command.spec.aliases:
-                cp = command.chain.copy()
-                cp[-1] = ali
-                _options.add(" ".join(command.chain[0:len(chain)]))
-        return self._suggest(" ".join(chain), list(_options))
-    
-    def _find_partial(self, chain: list[str] | tuple[str, ...]) -> tuple[Command, ...] | None:
-        chain = tuple(chain)
-        commands: list[Command] = []
-        for command in self._real_cmds:
-            if tuple(command.chain)[0:len(chain)] == chain:
-                commands.append(command)
-                continue
-            for alias in command.spec.aliases:
-                new = list(command.chain.copy())
-                new[-1] = alias
-                if tuple(new)[0:len(chain)] == tuple(chain):
-                    commands.append(command)
-                    break
-        return tuple(commands)
                 
     def _create_globals(self) -> list[flag.Argument]:
         _global_list: list[flag.Argument] = []
@@ -235,7 +191,6 @@ class CommandManager:
             help = self._main_parser.processed_globals.get("help", False)
             if not help:
                 raise
-            pass
         hidden = self._main_parser.processed_globals.get("hidden", False)
         help = self._main_parser.processed_globals.get("help", False)
         if self._ready:
@@ -277,7 +232,7 @@ class CommandManager:
             return
 
         #look for command
-        command = self._find(opt.cmd.parts)
+        command = self.searcher.search(opt.cmd.parts)
         if command is None:
             print(self.help(show_hidden=hidden))
             return

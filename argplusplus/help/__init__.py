@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class HelpModule:
     def __init__(self, manager: "CommandManager") -> None:
         self.manager: "CommandManager" = manager
+        self.searcher = self.manager.searcher
     def usage(self, base: Command | list[str] | tuple[str] | None = None):
         base = self._chain(base)
         first_layer = set()
@@ -25,7 +26,7 @@ class HelpModule:
                 base = None
         else:
             chain = tuple(base)
-            command = self.manager._find(chain)
+            command = self.searcher.search(chain)
             if command:     
                 for argument in command.spec.arguments:
                     first_layer.add(argument.name)
@@ -66,11 +67,11 @@ class HelpModule:
     
     def _find_command(self, chain: list[str], show_hidden: bool = False) -> tuple[Command, ...]:
         #raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
-        _found = self.manager._find_partial(chain)
+        _found = self.searcher.search_partial(chain)
         if not _found:
-            _close = self.manager._suggest_closest(chain, hidden=show_hidden)
+            _close = self.searcher.search_closest(chain, hidden=show_hidden)
             if _close is not None and len(_close) > 0:
-                closest = self.manager._suggest_closest(chain, hidden=show_hidden)
+                closest = self.searcher.search_closest(chain, hidden=show_hidden)
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found! Did you mean any of these: {", ".join(closest)}?") # type: ignore
             else:
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found!")
@@ -132,7 +133,7 @@ class HelpModule:
 
         #so we are calling it on a real command or group, like `app example --help`
         exact = False
-        command = self.manager._find(chain)
+        command = self.searcher.search(chain)
         seen = set()
         parts = []
         if not command: #oh noes we never found a command :0
@@ -176,3 +177,6 @@ class HelpModule:
         return "\n".join(lines)
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.help(*args, **kwds)
+        
+class HelpException(Exception):
+    pass
