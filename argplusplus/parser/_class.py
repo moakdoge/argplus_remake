@@ -57,16 +57,26 @@ class Parser:
         
 
         fx = self._keywords[valid_len:]
+        print(self._options)
         new = []
-        i = 0
-        for val in enumerate(fx):
-            if i >= len(valid.arguments):
-                raise InvalidArgument(f"Too many parameters! Expected: {len(valid.arguments)}, got: {i+1}")
-            new.append(f"-{valid.arguments[i].name}={val[1]}")
-            if valid.arguments[i].verradic:
-                continue
-            i += 1
+        arg_index = 0
+        seen = set()
+        required = [i.name for i in valid.arguments if i.default is _empty and not i.flag]
+        for val in fx:
+            while arg_index < len(valid.arguments) and valid.arguments[arg_index].flag:
+                arg_index += 1
+            if arg_index >= len(valid.arguments):
+                raise InvalidArgument(
+                    f"Too many parameters! Expected: {len(valid.arguments)}, got: {len(new) + 1}"
+                )
 
+            current = valid.arguments[arg_index]
+            new.append(f"--{current.name}={val}")
+            seen.add(current.name)
+            if current.verradic:
+                continue
+            arg_index += 1
+        
 
         merged_options = list(self._options)
         merged_options.extend(new)

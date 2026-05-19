@@ -72,14 +72,15 @@ class CommandGenerator:
         sig = command.sig
         _kwrds = {}
         _args = []
-        for a, v in args.items():
-            if a in sig.parameters:
-                arg = sig.parameters[a]
-                if arg.kind == arg.KEYWORD_ONLY:
-                    _kwrds[a] = v
+        for name, param in sig.parameters.items():
+            if name not in args:
+                continue
+            v = args[name]
+            if param.kind == param.KEYWORD_ONLY:
+                _kwrds[name] = v
+            else:
+                if isinstance(v, list):
+                    _args.extend(v)
                 else:
-                    if isinstance(v, list):
-                        _args.extend(v)
-                    else:
-                        _args.append(v)
+                    _args.append(v)
         return _args, _kwrds
