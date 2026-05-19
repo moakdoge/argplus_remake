@@ -43,7 +43,7 @@ class CommandSearcher:
         matches = get_close_matches(name, options, n=3, cutoff=0.6)
         return matches if matches else None    
     
-    def search_closest(self, chain: list[str], hidden: bool = False) -> list[str] | None:
+    def search_similar(self, chain: list[str], hidden: bool = False) -> list[str] | None:
         _options = set()
         for command in self.commands:
             if command.hidden and not hidden:
@@ -55,7 +55,7 @@ class CommandSearcher:
                 _options.add(" ".join(command.chain[0:len(chain)]))
         return self._suggest(" ".join(chain), list(_options))
     
-    
+
     @property
     def commands(self) -> list[Command]:
         return self.manager._real_cmds

@@ -1,6 +1,4 @@
-from contextlib import contextmanager
 from datetime import datetime
-from difflib import get_close_matches
 from pathlib import Path
 from argplusplus._tee import tee_output
 from argplusplus.command_context import CommandContext, Pipes
@@ -51,13 +49,6 @@ class CommandManager:
         grp = CommandGroup(commands, self, author=author)
         return grp
     
-    
-    @contextmanager
-    def silent(self):
-        try:
-            yield
-        except Exception as e:
-            pass
         
     def ready(self, *, priority: float = 1) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
@@ -160,7 +151,6 @@ class CommandManager:
     def _raise(self, exc: Exception) -> bool:
         success = False
         for i in self._exception_holder:
-            
             if type(exc) in i.exception_type or Exception in i.exception_type:
                 success = i.function(exc) or False
 
@@ -168,105 +158,109 @@ class CommandManager:
             raise exc
         return success
 
-    
-    def _process(self, args: list[str] | None = None, *, stdout: bool = True, stderr: bool = True) -> CommandContext | None:
-        args = args or sys.argv #get arguments
-        
-        #process
-        if not hasattr(self, "context"):
-            self.context = ManagerContext(
-                cwd=Path.cwd(),
-                argv=args,
-                start=datetime.now(),
-                env=dict(os.environ),
-            )
-
-        self._main_parser = _class.Parser(args) #create core parser
-        self._main_parser._globals = self._create_globals()
-        self._main_parser.add(self._specs)
-        opt = None
-        try:
-            opt = self._main_parser.process()
-        except exceptions.MissingArgument:
-            help = self._main_parser.processed_globals.get("help", False)
-            if not help:
-                raise
-        hidden = self._main_parser.processed_globals.get("hidden", False)
-        help = self._main_parser.processed_globals.get("help", False)
+    def _readied(self):
         if self._ready:
             self._ready.sort(key=lambda x: getattr(x, "_pri", 100)) # type: ignore
             for cmd in self._ready:
                 cmd()
             self._ready = None # type: ignore
             
-        if help:
-            try:
-                self._main_parser.process()
-            except Exception as e:
-                pass
-            
-            print(self.help(self._main_parser._keywords, show_hidden=hidden))
-            return
-        
+    def _process(self, args: list[str] | None = None, *, stdout: bool = True, stderr: bool = True) -> CommandContext | None:
+        args = args or sys.argv #get arguments
         #process
-
-       # print(self._main_parser.processed_globals)
-        hidden = False
-
-        if not opt:
-            print(self.help(self._main_parser._keywords, show_hidden=hidden))
-            return None
-
-        
-        #handle globals
-        for glob, val in self._main_parser.processed_globals.items():
-            setattr(self.globals, glob, val)
-
-        if self.globals.help:
-            try:
-                self._main_parser.process()
-            except Exception as e:
-                pass
+        if not hasattr(self, "context"): #generate context
+            self.context = ManagerContext(
+                cwd=Path.cwd(),
+                argv=args,
+                start=datetime.now(),
+                env=dict(os.environ),
+            )
+            self._readied()
             
-            print(self.help(self._main_parser._keywords, show_hidden=hidden))
-            return
-
-        #look for command
-        command = self.searcher.search(opt.cmd.parts)
-        if command is None:
-            print(self.help(show_hidden=hidden))
-            return
-        
-        _args, _kwrds = self.generator.gencall(command, opt.args)
-
-
-
-        context = CommandContext(command, self, _args, _kwrds)
+        opt = None
         try:
-            for before in self._before:
-                before(context)
-            #generate the pipes
-            with tee_output(not stdout,not stderr) as (out, err):
-                output = context.command.function(*context.args, **context.kwargs)
-            stdout_text = out.getvalue()
-            stderr_text = err.getvalue()          
-            pipes = Pipes(stderr=stderr_text, stdout=stdout_text)
-            context.pipes = pipes
-            context.output = output
-            context.success = True
-        except Exception as e:
+            self._main_parser = _class.Parser(args) #create core parser
+            self._main_parser._globals = self._create_globals()
+            # Pre-scan flags so --help works even when parsing fails early.
+            self._main_parser._mini_process_globals(args[1:])
+            self._main_parser.add(self._specs)
+            help = self._main_parser.processed_globals.get("help", False)
+            
             try:
-                o = self._raise(e)
-                if o:
-                    context.exceptions.append(e)
+                opt = self._main_parser.process()
+            except exceptions.MissingArgument:
+                help = self._main_parser.processed_globals.get("help", False)
+                if help:
+                    raise HelpException
+                raise
+            
+            
+                
+            if help:
+                try:
+                    self._main_parser.process()
+                except Exception as e:
+                    pass
+                
+                raise HelpException
+                
+            hidden = False
+            if not opt:
+                raise HelpException
+
+            
+            #handle globals
+            for glob, val in self._main_parser.processed_globals.items():
+                setattr(self.globals, glob, val)
+
+            if self.globals.help:
+                try:
+                    self._main_parser.process()
+                except Exception as e:
+                    pass
+                
+                raise HelpException
+
+
+            #look for command
+            command = self.searcher.search(opt.cmd.parts)
+            if command is None:
+                raise HelpException
+
+            _args, _kwrds = self.generator.gencall(command, opt.args)
+            context = CommandContext(command, self, _args, _kwrds)
+            try:
+                for before in self._before:
+                    before(context)
+                #generate the pipes
+                with tee_output(not stdout,not stderr) as (out, err):
+                    output = context.command.function(*context.args, **context.kwargs)
+                stdout_text, stderr_text = out.getvalue(), err.getvalue()
+                pipes = Pipes(stderr=stderr_text, stdout=stdout_text)
+                context.pipes, context.output, context.success = pipes, output, True
             except Exception as e:
-                if isinstance(e, exceptions.ParsingException):
-                    raise e
-                raise exceptions.ParsingException(e)
+                try:
+                    o = self._raise(e)
+                    if o:
+                        context.exceptions.append(e)
+                except Exception as e:
+                    if isinstance(e, exceptions.ParsingException):
+                        raise e
+                    raise exceptions.ParsingException(e)
+            
+            for after in self._after:
+                after(context)
+            return context
         
-        for after in self._after:
-            after(context)
-        return context
+        except HelpException as e:
+            hidden = self._main_parser.processed_globals.get("hidden", False)
+            help = self._main_parser.processed_globals.get("help", False)
+            if opt is None:
+                print(self.help(self._main_parser._keywords, show_hidden=hidden))
+                return None
+            
+            if help:
+                print(self.help(self._main_parser._keywords, show_hidden=hidden))
 
     def process(self, args: list[str] | None = None):
         try:

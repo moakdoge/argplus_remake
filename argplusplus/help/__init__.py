@@ -69,9 +69,9 @@ class HelpModule:
         #raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' does not exist!") 
         _found = self.searcher.search_partial(chain)
         if not _found:
-            _close = self.searcher.search_closest(chain, hidden=show_hidden)
+            _close = self.searcher.search_similar(chain, hidden=show_hidden)
             if _close is not None and len(_close) > 0:
-                closest = self.searcher.search_closest(chain, hidden=show_hidden)
+                closest = self.searcher.search_similar(chain, hidden=show_hidden)
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found! Did you mean any of these: {", ".join(closest)}?") # type: ignore
             else:
                 raise exceptions.InvalidCommmand(f"Command '{" ".join(chain)}' not found!")
