@@ -21,7 +21,7 @@ def catch(exp: Exception):
    # return True
     
 @test_group.register("hi")
-def hi(x: int):
+def hi(x: bool, y: bool, z: bool):
     '''wow'''
-    print("wow")
+    print("wow, x is", x, "y is", y, "z is", z)
 manager.process()

@@ -1,4 +1,4 @@
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import copy
 from datetime import datetime
 from difflib import get_close_matches
@@ -61,6 +61,13 @@ class CommandManager:
         return grp
     
     
+    @contextmanager
+    def silent(self):
+        try:
+            yield
+        except Exception as e:
+            pass
+        
     def ready(self, *, priority: float = 1) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             @wraps(func)

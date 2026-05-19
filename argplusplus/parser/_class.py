@@ -1,4 +1,5 @@
 from functools import cached_property
+from itertools import takewhile
 import sys
 from typing import Any, Iterable, get_origin
 from . import _empty
@@ -10,15 +11,21 @@ class Parser:
         self._globals: list[Argument] = []
         self.processed_globals: dict[str, Any] = {}
         self._commands: set[Command] = set()
-
+    def _negative_number(self, s: str) -> bool:
+        try:
+            float(s)
+            return s.startswith("-")
+        except ValueError:
+            return False
     def process(self) -> Result | None:
         args = self._raw_args
         self._keywords = []
         self._options = []
         for i, arg in enumerate(args[1:]):
             dashes = len(arg) - len(arg.lstrip("-"))
-            if arg.startswith("-") and (dashes == 2):
-                self._options = args[1+i:]
+            is_option = arg.startswith("-") and not self._negative_number(arg) and (dashes == 2 or dashes == 1)
+            if is_option:
+                self._options = args[1 + i :]
                 break
             self._keywords.append(arg)
         self._mini_process_globals(self._options)
@@ -148,8 +155,10 @@ class Parser:
         arg_value: str = ""
         seen = set()
         vals: dict[str, list] = {}
+        
+        #preprocess the args to make it easier to handle  
+        
         #attempt to recover the args if they're at the start
-
         for arg_name, arg_value, flag in self._enumerate_options(opt):
             #find applicable argument
             argument: Argument | None = None
@@ -165,7 +174,20 @@ class Parser:
                         self.processed_globals[glob_name] = glob._convert_type(arg_value)
                         break
                 else: #success
-                    raise InvalidArgument("Invalid argument!")
+                    #attempt to split the arg
+                    nms = [arg.name for arg in command.arguments]
+                    ls=list(arg_name)
+                    result = list(set(nms) & set(ls))
+                    if len(result) == len(ls): #short-flag match
+                        for arg in command.arguments:
+                            if arg.name not in result:
+                                continue
+                            
+                            if not arg.flag:
+                                raise InvalidArgument(f"Argument {arg.name} is not a flag! To use shortform, please make it a flag!")
+                            pairs.append((arg.name, True))
+                        continue
+                    raise InvalidArgument(f"Argument --{arg_name} is invalid!")
                 continue
 
             if not argument.flag and flag:

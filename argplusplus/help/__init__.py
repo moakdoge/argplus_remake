@@ -2,7 +2,6 @@ from argplusplus.parser.flag import _empty
 from typing import TYPE_CHECKING, Any
 from collections.abc import Iterable
 
-from click import argument
 
 from argplusplus.command import Command
 from argplusplus.parser import exceptions
