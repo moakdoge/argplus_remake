@@ -3,7 +3,6 @@ from typing import Any, TypeAlias, Union
 
 from typing import Any, TypeAlias, get_args, get_origin, Literal, Union
 from types import UnionType
-from collections.abc import Sequence
 
 AnyType: TypeAlias = Any
 

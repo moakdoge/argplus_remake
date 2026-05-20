@@ -4,7 +4,6 @@ from types import UnionType
 from pathlib import Path
 from enum import Enum
 
-from numpy import isin
 
 from argplusplus.parser._custom_bool import BoolPlus
 from argplusplus.parser.exceptions import InvalidArgumentType

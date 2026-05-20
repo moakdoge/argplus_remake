@@ -1,7 +1,6 @@
 from functools import cached_property
-from itertools import takewhile
 import sys
-from typing import Any, Iterable, get_origin
+from typing import Any,  get_origin
 from . import _empty
 from .flag import CommandMetadata, Argument, Result
 from .exceptions import *

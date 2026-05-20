@@ -1,10 +1,7 @@
 from datetime import datetime
-from pathlib import Path
-from types import ModuleType
 from argplusplus._tee import tee_output
 from argplusplus.command_context import CommandContext, Pipes
 from argplusplus.command_generator import CommandGenerator
-from argplusplus.console import Console
 from argplusplus.exception_hooker import ExceptionCatcher
 from argplusplus.globals import Globals
 from argplusplus.group import CommandGroup
@@ -13,9 +10,14 @@ from argplusplus.searcher import CommandSearcher
 from argplusplus.terminal_properties import ManagerContext
 from .command import Command, Global
 from functools import cached_property, wraps
-from typing import Annotated, Any, Optional, TypeVar, ParamSpec, Callable
+from typing import TYPE_CHECKING, Annotated, Any, Optional, TypeVar, ParamSpec, Callable
 from argplusplus.parser import flag, _class, exceptions
 import inspect, os, stat, sys, tempfile
+
+
+if TYPE_CHECKING:
+    from argplusplus.console import Console
+from pathlib import Path
 
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -38,7 +40,6 @@ class CommandManager:
         self._after: list[Callable[[CommandContext]]] = []
         self.description = description
         self.context: ManagerContext
-        self.console: Console = Console()
         self._ready: list[Callable] = []
 
         if make_executable:
@@ -46,6 +47,11 @@ class CommandManager:
         
         pass
 
+    @cached_property
+    def console(self) -> "Console":
+        from argplusplus.console import Console
+        return Console()
+    
     def group(self, *commands: str, author: str | None = None) -> CommandGroup:
         grp = CommandGroup(commands, self, author=author)
         return grp

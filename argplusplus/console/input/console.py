@@ -1,14 +1,12 @@
 import re
 import sys, shutil
-import tty
-import termios
+
 
 import argplusplus.console.color as clr
 from argplusplus.console.input.keys import KeyReader
 from argplusplus.console.input.progress_bar import ProgressBar
 from argplusplus.console.input.spinner import Spinner
 from argplusplus.console.types.widgets import SpinnerType
-from rich.console import Console
 
 class OutputConsole:
     def __init__(self) -> None:

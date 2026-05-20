@@ -7,7 +7,7 @@ from . import _empty
 from .exceptions import *
 from ._custom_bool import BoolPlus
 
-@dataclass(slots=True, unsafe_hash=True)
+@dataclass(slots=True)
 class Argument:
     name: str = ""
     aliases: tuple[str, ...] = () # type: ignore
@@ -22,13 +22,18 @@ class Argument:
             return BoolPlus.check(value)
 
         return convert_value(value, self.tp)
-
-@dataclass(slots=True, unsafe_hash=True)
+    def __hash__(self) -> int:
+        
+        _val = [v for k,v in self.__dict__.items()]
+        return hash((*_val,))
+@dataclass(slots=True)
 class CommandMetadata:
     parts: tuple[str, ...]
     aliases: tuple[str, ...] = () # type: ignore
     arguments: tuple[Argument, ...] = () # type: ignore
     comment: str = ""
+    def __hash__(self) -> int:
+        return hash((*self.parts, *self.aliases, *self.arguments, self.comment))
 
 
 @dataclass(frozen=True, slots=True)
