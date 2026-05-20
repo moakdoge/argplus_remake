@@ -50,13 +50,15 @@ class HelpModule:
         '''Gets the longest part.'''
         if isinstance(commands, Iterable) and not isinstance(commands, list):
             return max(commands)
-        return max(len(i.spec.parts[0]) for i in commands)
+        return max(len(i.spec.parts[0]) if len(i.spec.parts) > 0 else 0 for i in commands)
     
     def _get_visible_commands(self, show_hidden: bool = False) -> list[Command]:
         _cmds: list[Command] = []
         seen = set()
         for command in self.manager._real_cmds:
             if command.hidden and not show_hidden:
+                continue
+            if len(command.chain) <= 0:
                 continue
             primary = command.chain[0] #get the primary argument
             if primary in seen:

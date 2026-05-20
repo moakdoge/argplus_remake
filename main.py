@@ -27,5 +27,11 @@ def catch(exp: Exception):
 @manager.after()
 def after(ctx: CommandContext):
     print(ctx.output)
-manager.autogen(math)
+
+
+
+@manager.root()
+def x():
+    print("oh well suprising")
+    
 manager.process()

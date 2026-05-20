@@ -56,6 +56,12 @@ class CommandGenerator:
         doc = callable.__doc__ if callable.__doc__ else ""
         for _, arg in signature.parameters.items():
             arguments.append(self._create_argument(arg))
+        
+        if len(commands) == 0:
+            commands = (callable.__name__,)
+        if len(commands) == 1 and commands[0] == "":
+            commands = ()
+            
         metadata =flag.CommandMetadata(
             parts=tuple(commands), 
             arguments=tuple(arguments), 

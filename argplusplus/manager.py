@@ -13,7 +13,7 @@ from argplusplus.searcher import CommandSearcher
 from argplusplus.terminal_properties import ManagerContext
 from .command import Command, Global
 from functools import cached_property, wraps
-from typing import Annotated, Any, TypeVar, ParamSpec, Callable
+from typing import Annotated, Any, Optional, TypeVar, ParamSpec, Callable
 from argplusplus.parser import flag, _class, exceptions
 import inspect, os, stat, sys, tempfile
 
@@ -163,9 +163,25 @@ class CommandManager:
     def register(self, *commands: str, author: str="", aliases: tuple[str, ...] | None = None, hidden: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             #start making a tree
-            _tmp_cmd = self.generator.process(commands, func, aliases, author=author, hidden=hidden)
+            
+            #simple input validation
+            c = [_ for _ in commands if _.strip(" ").replace(" ", "") != ""]
+            if len(c) <= 0:
+                raise exceptions.InvalidCommmand(f"Command must not be blank!")
+            
+            _tmp_cmd = self.generator.process(tuple(c), func, aliases, author=author, hidden=hidden)
             self._real_cmds.append(_tmp_cmd)
             return func
+        return decorator
+    
+    def root(self, *, author: Optional[str] = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
+        def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            @wraps(func)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                return func(*args, **kwargs)
+            _tmp = self.generator.process(("",), func, None)
+            self._real_cmds.append(_tmp)
+            return wrapper
         return decorator
 
                 
@@ -297,7 +313,9 @@ class CommandManager:
             if help:
                 print(self.help(self._main_parser._keywords, show_hidden=hidden))
 
+    
     def process(self, args: list[str] | None = None):
+
         try:
             return self._process(args)
         except exceptions.ParsingException as e:
