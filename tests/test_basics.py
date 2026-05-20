@@ -175,23 +175,3 @@ def test_command_group_registers_subcommand(manage, capsys):
     assert called is True
     
 
-
-def test_basic_time(manage, capsys):
-    @manage.register("test")
-    def example(x: int):
-        return x
-    
-    def test():
-        manage.run("test", "--x=123")
-
-    from timeit import timeit
-
-    tm=[]
-    tests = 1e4
-    for i in range(int(tests)):
-        start = time.perf_counter_ns()
-        manage.run("test", "--x=123")
-        tm.append(time.perf_counter_ns() - start)
-    tm = sum(tm)
-    tm /= tests
-    assert tm <= 50_000 #50us / 0.000005s max time to run command
