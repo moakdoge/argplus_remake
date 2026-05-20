@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from types import ModuleType
 from argplusplus._tee import tee_output
 from argplusplus.command_context import CommandContext, Pipes
 from argplusplus.command_generator import CommandGenerator
@@ -49,7 +50,41 @@ class CommandManager:
         grp = CommandGroup(commands, self, author=author)
         return grp
     
-        
+    def autogen(self, ob: object) -> list[Command]:
+        '''Generates commands completely automatically'''
+        commands: list[Command] = []
+        if not hasattr(ob, "__dict__"):
+            return commands
+
+        owner = getattr(ob, "__name__", None) or ob.__class__.__name__
+        for name, member in inspect.getmembers(ob):
+            if name.startswith("_"):
+                continue
+            if not (inspect.isfunction(member) or inspect.ismethod(member) or inspect.isbuiltin(member)):
+                continue
+
+            try:
+                inspect.signature(member)
+            except (TypeError, ValueError):
+                # Some builtins don't expose a signature; skip them.
+                continue
+
+            callable_member = member
+            if inspect.ismethod(member) and member.__self__ is not None:
+                sig = inspect.signature(member)
+                params = list(sig.parameters.values())
+                if params and params[0].name == "self":
+                    def _bound(*args: Any, **kwargs: Any):
+                        return member(*args, **kwargs)
+                    _bound.__name__ = member.__name__
+                    _bound.__doc__ = member.__doc__
+                    _bound.__signature__ = sig.replace(parameters=params[1:]) # type: ignore
+                    callable_member = _bound
+
+            cmd = self.generator.process((name,), callable_member, author=owner)
+            self._real_cmds.append(cmd)
+            commands.append(cmd)
+        return commands
     def ready(self, *, priority: float = 1) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             @wraps(func)

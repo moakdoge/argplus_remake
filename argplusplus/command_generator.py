@@ -33,6 +33,8 @@ class CommandGenerator:
         elif origin is Optional:
             anno = get_args(origin)[0]
         ver = arg.kind == arg.VAR_POSITIONAL
+        if anno is _empty:
+            anno = Any
         return flag.Argument(
             arg.name,
             tuple(_aliases), # type: ignore

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+import math
 import random
 import time
 
 import argplusplus as argpp
+from argplusplus.command_context import CommandContext
 from argplusplus.types import Flag
 
 
@@ -22,8 +24,8 @@ def catch(exp: Exception):
     return False
    # return True
     
-@test_group.register("hi")
-def hi(x: Flag, y: int, z: int = 0):
-    '''wow'''
-    print("wow, x is", x, "y is", y, "z is", z)
+@manager.after()
+def after(ctx: CommandContext):
+    print(ctx.output)
+manager.autogen(math)
 manager.process()

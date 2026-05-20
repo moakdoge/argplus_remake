@@ -57,11 +57,11 @@ class Parser:
         
 
         fx = self._keywords[valid_len:]
-        print(self._options)
+        #print(self._options)
         new = []
         arg_index = 0
         seen = set()
-        required = [i.name for i in valid.arguments if i.default is _empty and not i.flag]
+        #required = [i.name for i in valid.arguments if i.default is _empty and not i.flag]
         for val in fx:
             while arg_index < len(valid.arguments) and valid.arguments[arg_index].flag:
                 arg_index += 1
