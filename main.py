@@ -30,8 +30,8 @@ def after(ctx: CommandContext):
 
 
 
-@manager.root()
-def x():
+@manager.register()
+def x_is_cool():
     print("oh well suprising")
     
 manager.process()

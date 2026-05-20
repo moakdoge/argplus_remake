@@ -3,6 +3,7 @@ from inspect import Parameter
 import inspect
 from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional, get_args, get_origin
 
+from argplusplus import stringutils
 from argplusplus.command import Command
 from argplusplus.parser import flag, _empty
 from argplusplus.parser._alises import Alias
@@ -58,7 +59,7 @@ class CommandGenerator:
             arguments.append(self._create_argument(arg))
         
         if len(commands) == 0:
-            commands = (callable.__name__,)
+            commands = (stringutils.normalize_name(callable.__name__),)
         if len(commands) == 1 and commands[0] == "":
             commands = ()
             

@@ -172,9 +172,6 @@ class CommandManager:
             
             #simple input validation
             c = [_ for _ in commands if _.strip(" ").replace(" ", "") != ""]
-            if len(c) <= 0:
-                raise exceptions.InvalidCommmand(f"Command must not be blank!")
-            
             _tmp_cmd = self.generator.process(tuple(c), func, aliases, author=author, hidden=hidden)
             self._real_cmds.append(_tmp_cmd)
             return func

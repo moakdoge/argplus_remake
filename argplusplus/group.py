@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, TypeVar, ParamSpec, Callable
 
+from argplusplus import stringutils
+
 P = ParamSpec('P')
 R = TypeVar('R')
 
@@ -23,7 +25,12 @@ class CommandGroup:
     
     def register(self, *commands: str, author: str | None = None, aliases: tuple[str, ...] = (), hidden: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            nonlocal commands
             expanded: list[str] = list(self.commands[:])
+            if self.commands == commands:
+                cmds = list(commands)
+                cmds.append(stringutils.normalize_name(func.__name__))
+                commands = tuple(cmds)
             expanded.extend(list(commands))
             self._registered.append((commands, func))
             self.manager.register(*expanded, author=author or self.author or "", aliases=aliases,hidden=hidden)(func)
