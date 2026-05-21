@@ -73,3 +73,7 @@ def space_evenly(*strs: str, seperator_char: str = "") -> str:
 
 def bar(*strs: str, symbol: str = "|") -> list[str]:
     return [symbol + _ + symbol for _ in strs]
+
+def linecount(st: str) -> int:
+    '''Returns the amount of lines'''
+    return st.count("\n")
