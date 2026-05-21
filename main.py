@@ -4,13 +4,14 @@ import random
 import time
 
 import argplusplus as argpp
+from argplusplus import stringutils
 from argplusplus.command_context import CommandContext
 from argplusplus.types import Flag
 
 
 manager = argpp.manager.CommandManager(name="pyu", make_executable=True)
-test_group = manager.group("example", author="moakdoge")
-
+render = manager.group("render", author="moakdoge")
+input = manager.group("input", author="moakdoge")
     
 @manager.catch(Exception)
 def catch(exp: Exception):
@@ -24,14 +25,30 @@ def catch(exp: Exception):
     return False
    # return True
     
-@manager.after()
-def after(ctx: CommandContext):
-    print(ctx.output)
 
 
-
-@manager.register()
-def x_is_cool():
-    print("oh well suprising")
+@render.register()
+def table():
+    example_table = [[str(i) for i in range(8)] for i in range(10)]
+    for x, _x in enumerate(example_table):
+        l = [_ for _ in _x]
+        lines = stringutils.space_evenly(*l, seperator_char="|")
+        lines = stringutils.bar(lines)
+        for l in lines[:]:
+            lines.append("-"*len(l))
+        lines.insert(0, "-"*len(lines[0]))
+        print("\n".join(lines))
     
+@input.register("ask")
+def ask(prompt: str = "Would you like to download?", preferred: bool = True):
+    answer = manager.console.ask(prompt, preferred=preferred)
+    manager.console.pprint(f"User answered: {"[green]yes[/green]" if answer else "[red]no[/red]"}")
+
+@input.register("password")
+def password(prompt: str = "Please type in a password > "):
+    passwd = manager.console.password(prompt, censor="*")
+    manager.console.pprint(f"User submitted: {passwd}")
+
+
+
 manager.process()

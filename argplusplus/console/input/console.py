@@ -1,5 +1,6 @@
 import re
 import sys, shutil
+from typing import Optional
 
 
 import argplusplus.console.color as clr
@@ -129,6 +130,48 @@ class OutputConsole:
     def newline(self):
         self.stdout.write(self.nl)
 
+
+    def password(self, prompt: str, *, censor: Optional[str] = None) -> str:
+        self.raw_print(prompt)
+        if self.piped:
+            return self.stdin.readline().strip("\n")
+        typed = ""
+        cursor = 0
+        buf =[]
+        input_h = len(self._input_history)
+        with self.raw:
+            #print(self._input_history)
+            for key in self.raw:
+                HORIZ_MOVEMENT = 0
+                if key == "\r":
+                    self.newline()
+                    self.clear_line()
+                    return "".join(buf)
+                
+                if key == "\x7f":  # Backspace
+                    if cursor > 0:
+                        del buf[cursor - 1]
+                        cursor -= 1
+                    HORIZ_MOVEMENT -= 1
+                else: # Any other key
+                    buf.append(key)
+                    cursor += 1
+                    HORIZ_MOVEMENT += 1             
+
+                text = ''.join(buf)
+                if censor:
+                    self.raw_print('\r\033[K' + prompt + (len(text)* censor))
+                else:
+                    self.raw_print('\r\033[K' + prompt)
+
+                move_left = len(text) - cursor
+                if move_left > 0:
+                    self.raw_print(f'\033[{move_left}D')
+
+                self.flush()
+
+        return typed
+    
     def input(self, prompt: str):
         self.raw_print(prompt)
         if self.piped:
