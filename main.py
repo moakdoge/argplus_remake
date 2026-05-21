@@ -64,7 +64,10 @@ def checkbox():
     
 @input.register("tui")
 def tui():
-    obj = TUI(manager.console).title("Hello, world!")
-    obj.draw()
+    obj = TUI(manager.console) \
+    .title("Hello, world!") \
+    .checkbox("Option 1", state=True) \
+    .checkbox(option="Option 2")
+    obj.build()
     
 manager.process()
