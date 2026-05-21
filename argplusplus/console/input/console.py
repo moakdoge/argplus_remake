@@ -24,12 +24,12 @@ class OutputConsole:
         return (sz.lines, sz.columns)
 
 
-    def checkbox(self, options: list[str], prompt: str = "Please choose an option", multiple: bool = False) -> dict[str, bool] | None:
+    def checkbox(self, options: list[str] | dict[str, bool], prompt: str = "Please choose an option", multiple: bool = False) -> list | None:
         def _check(state: bool):
             if state:
                 return "[green][X][/green]"
             return "[red][O][/red]"
-        states: dict[str, bool] = {s: False for s in options}
+        states: dict[str, bool] = options if isinstance(options, dict) else {s: False for s in options}
         cursor: int = 0
         
         def _get(ind: int) -> str:
@@ -45,15 +45,16 @@ class OutputConsole:
                     val = states[opt]
                     if cursor == (i-1):
                         self.raw_print("\033[1m")
-                    content = self.format(f"{opt}: {_check(val)}")
-                    self.raw_print("\r" + content + "\n", flush=False)
+                    content = self.format(f"  - {opt}: {_check(val)}")
+                    self.raw_print("\r" + content, flush=False)
                     if cursor == (i-1):
                         self.raw_print("\033[0m")
+                    self.newline()
                 
             if cursor == lines_count-1:
                 self.pprint("\r[bold][Enter][/bold]",end="")
             else:
-                self.pprint("\r[bold][Enter][/bold]",end="")
+                self.pprint("\r[Enter]",end="")
             self.flush()
         self.hide_cursor()
         try:
@@ -73,11 +74,11 @@ class OutputConsole:
                             cursor += 1
                     if key == "\r":
                         if cursor == len(states):
-                            return states
+                            return [s for s, v in states.items() if v]
                         states[_get(cursor)] = not states[_get(cursor)]
                     _render(lines_count)
         except KeyboardInterrupt as e:
-            return states
+            return [s for s, v in states.items() if v]
         finally:
             self.show_cursor()
             self.newline()

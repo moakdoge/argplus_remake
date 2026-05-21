@@ -57,6 +57,7 @@ def choice(*opt: str, prompt: str = "Please choose an option", case_sensitive: F
 
 @input.register("checkbox")
 def checkbox():
-    opt = manager.console.checkbox(["Option 1", "Option 2"])
+    opt = manager.console.checkbox({"Option 1": False, "Option 2": True})
     print(f"Chose: {opt}")
+    
 manager.process()
