@@ -39,9 +39,9 @@ def table():
         lines.insert(0, "-"*len(lines[0]))
         print("\n".join(lines))
     
-@input.register("ask")
-def ask(prompt: str = "Would you like to download?", preferred: bool = True):
-    answer = manager.console.ask(prompt, preferred=preferred)
+@input.register("confirm")
+def confirm(prompt: str = "Would you like to download?", preferred: bool = True):
+    answer = manager.console.confirm(prompt, preferred=preferred)
     manager.console.pprint(f"User answered: {"[green]yes[/green]" if answer else "[red]no[/red]"}")
 
 @input.register("password")
@@ -54,4 +54,9 @@ def choice(*opt: str, prompt: str = "Please choose an option", case_sensitive: F
     chosen = manager.console.choice(opt, question=prompt, case_sensitive=case_sensitive)
     manager.console.pprint(f"User chose: [green]{chosen}[/green]")
 
+
+@input.register("checkbox")
+def checkbox():
+    opt = manager.console.checkbox(["Option 1", "Option 2"])
+    print(f"Chose: {opt}")
 manager.process()

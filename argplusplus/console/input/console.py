@@ -23,7 +23,66 @@ class OutputConsole:
         sz= shutil.get_terminal_size()
         return (sz.lines, sz.columns)
 
-    def ask(self, question: str = "", preferred: bool = True) -> bool:
+
+    def checkbox(self, options: list[str], prompt: str = "Please choose an option", multiple: bool = False) -> dict[str, bool] | None:
+        def _check(state: bool):
+            if state:
+                return "[green][X][/green]"
+            return "[red][O][/red]"
+        states: dict[str, bool] = {s: False for s in options}
+        cursor: int = 0
+        
+        def _get(ind: int) -> str:
+            return list(states.keys())[ind]
+        def _render(lines_count: int):
+            self.move_cursor(lines=-(lines_count))
+            for i in range(lines_count):
+                self.clear_line()
+                if i == 0:
+                    self.raw_print("\r" + prompt + "\n", flush=False)
+                else:
+                    opt = _get(i-1)
+                    val = states[opt]
+                    if cursor == (i-1):
+                        self.raw_print("\033[1m")
+                    content = self.format(f"{opt}: {_check(val)}")
+                    self.raw_print("\r" + content + "\n", flush=False)
+                    if cursor == (i-1):
+                        self.raw_print("\033[0m")
+                
+            if cursor == lines_count-1:
+                self.pprint("\r[bold][Enter][/bold]",end="")
+            else:
+                self.pprint("\r[bold][Enter][/bold]",end="")
+            self.flush()
+        self.hide_cursor()
+        try:
+            with self.raw:
+                lines_count = len(states) + 1
+                self.print(prompt)
+                for opt, val in states.items():
+                    self.print(f"{opt}: {_check(val)}")
+                _render(lines_count)
+                for key in self.raw:
+                    if key == '\x1b[A':  # Left arrow
+                        if cursor > 0:
+                            cursor -= 1
+
+                    elif key == "\x1b[B":  # Right arrow
+                        if cursor < len(options):
+                            cursor += 1
+                    if key == "\r":
+                        if cursor == len(states):
+                            return states
+                        states[_get(cursor)] = not states[_get(cursor)]
+                    _render(lines_count)
+        except KeyboardInterrupt as e:
+            return states
+        finally:
+            self.show_cursor()
+            self.newline()
+
+    def confirm(self, question: str = "", preferred: bool = True) -> bool:
         y = "Y" if preferred else "y"
         n = "n" if preferred else "N"
         truthy = ["true", "yes", "y"]
