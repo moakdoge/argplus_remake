@@ -8,6 +8,7 @@ from argplusplus.group import CommandGroup
 from argplusplus.help import HelpException, HelpModule
 from argplusplus.searcher import CommandSearcher
 from argplusplus.terminal_properties import ManagerContext
+from argplusplus.typingutils.__init_ import isinst
 from .command import Command, Global
 from functools import cached_property, wraps
 from typing import TYPE_CHECKING, Annotated, Any, Optional, TypeVar, ParamSpec, Callable
@@ -135,7 +136,7 @@ class CommandManager:
     def catch(self, *exception_types: type[Exception]) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             for exp in exception_types:
-                if not isinstance(exp, Exception):
+                if not isinst(exp, type[Exception]):
                     raise TypeError(f"{exp.__name__} MUST be an exception! (BaseExceptions are unsupported)")
             self._exception_holder.append(ExceptionCatcher(
                 func,tuple(exception_types)
