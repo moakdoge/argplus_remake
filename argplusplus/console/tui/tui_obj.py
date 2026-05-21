@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 class TUIStep():
     selectable: bool = False
     _parent: "TUI"
-    _bold: bool = True
+    _bold: bool = False
     def render(self) -> str:
         raise NotImplementedError
     
@@ -25,3 +25,7 @@ class TUIStep():
     def _dehover(self):
         '''Called when the object is dehovered. Defaults to bolding.'''
         self._bold = False
+        
+    def _selected(self):
+        '''Called when the object is selected'''
+        pass

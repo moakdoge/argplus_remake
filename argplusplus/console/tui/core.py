@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
-from argplusplus.console.tui.widgetslib.title import Checkbox, DebugPrint, Title
+from argplusplus.console.tui.widgetslib.title import Checkbox, Choice, DebugPrint, Title, Textbox
 
 
 if TYPE_CHECKING:
@@ -39,6 +39,7 @@ class TUI():
     def draw(self):
         if self.selectable and self.cursor >= len(self.selectable):
             self.cursor = 0
+        self.console.clear()
         self.console.move_cursor(lines=-self._line_counter)
         self._line_counter = 0
         for step in self.steps:
@@ -60,6 +61,8 @@ class TUI():
                         self.last_item()
                     case b'\x1b[B': #down
                         self.next_item()
+                    case b'\r':
+                        self.selected._selected()
                 self.draw()
         
     def next_item(self):
@@ -85,5 +88,15 @@ class TUI():
     
     def checkbox(self, option: str, *, state: bool = False):
         t = Checkbox(option, self, state=state)
+        self.steps.append(t)
+        return self
+    
+    def textbox(self, option: str, *, default: str = ""):
+        t = Textbox(option, self, default)
+        self.steps.append(t)
+        return self
+    
+    def choice(self, label: str, options: list[str], *, default: int = 0):
+        t = Choice(label=label, parent=self, options=options, default=default)
         self.steps.append(t)
         return self

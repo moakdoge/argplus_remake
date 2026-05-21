@@ -83,6 +83,9 @@ class OutputConsole:
             self.show_cursor()
             self.newline()
 
+    def clear(self):
+        self.raw_print("\033[2J\033[H")
+        
     def confirm(self, question: str = "", preferred: bool = True) -> bool:
         y = "Y" if preferred else "y"
         n = "n" if preferred else "N"

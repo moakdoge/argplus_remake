@@ -67,7 +67,9 @@ def tui():
     obj = TUI(manager.console) \
     .title("Hello, world!") \
     .checkbox("Option 1", state=True) \
-    .checkbox(option="Option 2")
+    .checkbox(option="Option 2") \
+    .textbox(option="hi", default="example") \
+    .choice(label="Optimizations",options=["-O", "-O2", "-O3"])
     obj.build()
     
 manager.process()
