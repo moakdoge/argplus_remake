@@ -6,12 +6,14 @@ import time
 import argplusplus as argpp
 from argplusplus import stringutils
 from argplusplus.command_context import CommandContext
+from argplusplus.console.tui.core import TUI
 from argplusplus.types import Flag
 
 
 manager = argpp.manager.CommandManager(name="pyu", make_executable=True)
 render = manager.group("render", author="moakdoge")
 input = manager.group("input", author="moakdoge")
+
     
 @manager.catch(KeyboardInterrupt) # type: ignore
 def catch(exp: KeyboardInterrupt):
@@ -59,5 +61,10 @@ def choice(*opt: str, prompt: str = "Please choose an option", case_sensitive: F
 def checkbox():
     opt = manager.console.checkbox({"Option 1": False, "Option 2": True})
     print(f"Chose: {opt}")
+    
+@input.register("tui")
+def tui():
+    obj = TUI(manager.console).title("Hello, world!")
+    obj.draw()
     
 manager.process()

@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from argplusplus import stringutils
-from argplusplus.console.tui.TUIStep import TUIStep
+from argplusplus.console.tui.tui_obj import TUIStep
+from argplusplus.console.tui.widgetslib.title import Title
 
 
 if TYPE_CHECKING:
@@ -22,3 +23,7 @@ class TUI():
             self.console.pprint("\r" + output)
         self.console.flush()
         
+    def title(self, title: str) -> Self:
+        t = Title(title,parent=self)
+        self.steps.append(t)
+        return self
