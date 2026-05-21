@@ -62,6 +62,6 @@ class KeyReader:
             key = self.readkey()
 
             if key is False or key is None:
-                break
+                raise KeyboardInterrupt
 
             yield key

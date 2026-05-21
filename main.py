@@ -13,8 +13,8 @@ manager = argpp.manager.CommandManager(name="pyu", make_executable=True)
 render = manager.group("render", author="moakdoge")
 input = manager.group("input", author="moakdoge")
     
-@manager.catch(Exception)
-def catch(exp: Exception):
+@manager.catch(KeyboardInterrupt) # type: ignore
+def catch(exp: KeyboardInterrupt):
     with manager.console.progress_bar(label="Reporting error") as spin:
         for i in range(50):
             var = random.random()
@@ -49,6 +49,9 @@ def password(prompt: str = "Please type in a password > "):
     passwd = manager.console.password(prompt, censor="*")
     manager.console.pprint(f"User submitted: {passwd}")
 
-
+@input.register("choice")
+def choice(*opt: str, prompt: str = "Please choose an option", case_sensitive: Flag = False):
+    chosen = manager.console.choice(opt, question=prompt, case_sensitive=case_sensitive)
+    manager.console.pprint(f"User chose: [green]{chosen}[/green]")
 
 manager.process()

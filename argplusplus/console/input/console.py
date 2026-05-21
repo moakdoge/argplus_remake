@@ -172,7 +172,7 @@ class OutputConsole:
 
         return typed
     
-    def input(self, prompt: str):
+    def input(self, prompt: str) -> str:
         self.raw_print(prompt)
         if self.piped:
             return self.stdin.readline().strip("\n")
@@ -189,6 +189,7 @@ class OutputConsole:
                     self.clear_line()
                     self._input_history.append("".join(buf))
                     return "".join(buf)
+                
                 
                 if key == "\x7f":  # Backspace
                     if cursor > 0:

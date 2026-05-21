@@ -134,6 +134,9 @@ class CommandManager:
 
     def catch(self, *exception_types: type[Exception]) -> Callable[[Callable[P, R]], Callable[P, R]]:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            for exp in exception_types:
+                if not isinstance(exp, Exception):
+                    raise TypeError(f"{exp.__name__} MUST be an exception! (BaseExceptions are unsupported)")
             self._exception_holder.append(ExceptionCatcher(
                 func,tuple(exception_types)
             ))
