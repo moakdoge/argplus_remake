@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
-from argplusplus.console.tui.widgetslib.title import Button, Checkbox, Choice, DebugPrint, Paragraph, Password, Spacer, Submenu, Title, Textbox
+
 
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ class TUI():
         self._line_counter = 0
         self.cursor = 0
         self._running = True
-        self._parent: "None | TUIStep" = None
+        self.parent: "None | TUIStep" = None
         
     @property
     def selectable(self) -> list[TUIStep]:
@@ -56,6 +56,8 @@ class TUI():
             self.console.raw_print("\r" + out + "\n", flush=False)
         self.console.flush()
     def build(self):
+        for _ in self.steps:
+            _._bind(self)
         with self.console.raw:
             # Highlight the initially selected item (only if user hasn't set it manually)
             if self.selectable and self.cursor == 0:
@@ -124,47 +126,57 @@ class TUI():
         
     
         
-    def title(self, title: str) -> Self:
-        t = Title(title,parent=self)
+    def title(self, label: str) -> Self:
+        from argplusplus.console.tui.widgetslib.text import Title
+        t = Title(label)
         self.steps.append(t)
         return self
+    
     def paragraph(self, content: str) -> Self:
-        t = Paragraph(content,parent=self)
+        from argplusplus.console.tui.widgetslib.text import Paragraph
+        t = Paragraph(content)
         self.steps.append(t)
         return self
     
-    def checkbox(self, option: str, *, state: bool = False, key: str | None = None):
-        t = Checkbox(option, self, state=state, key=key)
+    def checkbox(self, label: str, *, checked: bool = False, key: str | None = None):
+        from argplusplus.console.tui.widgetslib.other import Checkbox
+        t = Checkbox(label=label, state=checked, key=key)
         self.steps.append(t)
         return self
     
-    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | int | TUI"], key: str | None = None):
-        t = Button(label, self, callback, key=key)
+    def button(self, label: str, callback: Callable[["TUI"], "None | bool | int | TUI"], * , key: str | None = None):
+        from argplusplus.console.tui.widgetslib.nesting import Button
+        t = Button(label, callback, key=key)
         self.steps.append(t)
         return self
     
-    def textbox(self, option: str, *, default: str = "", key: str | None = None):
-        t = Textbox(option, self, default, key=key)
+    def textbox(self, label: str, *, default: str = "", key: str | None = None):
+        from argplusplus.console.tui.widgetslib.input import Textbox
+        t = Textbox(label, default=default, key=key)
         self.steps.append(t)
         return self
     
-    def password(self, option: str, *, symbol="*", key: str | None = None):
-        t = Password(option, self, symbol, key=key)
+    def password(self, label: str, *, symbol="*", key: str | None = None):
+        from argplusplus.console.tui.widgetslib.input import Password
+        t = Password(label, symbol=symbol, key=key)
         self.steps.append(t)
         return self
     
     def choice(self, label: str, options: list[str], *, default: int = 0, key: str | None = None):
-        t = Choice(label=label, parent=self, options=options, default=default, key=key)
+        from argplusplus.console.tui.widgetslib.other import Choice
+        t = Choice(label=label, options=options, default=default, key=key)
         self.steps.append(t)
         return self
     
     def submenu(self, label: str, menu: Callable[["TUI"], "None | TUI"], key: str | None = None):
-        t = Submenu(label, self, menu, key=key)
+        from argplusplus.console.tui.widgetslib.nesting import Submenu
+        t = Submenu(label, menu, key=key)
         self.steps.append(t)
         return self
     
     def spacer(self):
-        t = Spacer(self)
+        from argplusplus.console.tui.widgetslib.text import Spacer
+        t = Spacer()
         self.steps.append(t)
         return self
     

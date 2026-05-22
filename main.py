@@ -66,10 +66,10 @@ def checkbox():
 def tui():
     obj = TUI(manager.console) \
     .title("Settings") \
-    .checkbox("Create .gitignore", state=True, key="gitignore") \
-    .checkbox(option="Save Raw", key="saveraw") \
+    .checkbox(label="Create .gitignore", checked=True, key="gitignore") \
+    .checkbox(label="Save Raw", key="saveraw") \
     .spacer() \
-    .title("Other") \
+    .title(label="Other") \
     .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"], key="comp_opt") \
     .submenu(label="Properties", menu=lambda tui: (
         tui

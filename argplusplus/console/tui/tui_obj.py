@@ -11,8 +11,8 @@ class TUIStep():
     _parent: "TUI"
     key = ""
     _bold: bool = False
-    def __init__(self, parent: "TUI") -> None:
-        self._parent = parent
+    def __init__(self) -> None:
+        pass
         
     def render(self) -> str:
         raise NotImplementedError
@@ -34,6 +34,12 @@ class TUIStep():
         '''Called when the object is selected'''
         pass
     
+    def _bind(self, tui: "TUI"):
+        self._parent = tui
     def value(self) -> Any:
         '''The value of this;'''
         pass
+    
+    @property
+    def parent(self) -> "TUI":
+        return self._parent
