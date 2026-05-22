@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Self
+from typing import TYPE_CHECKING, Callable, Literal, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
@@ -165,6 +165,12 @@ class TUI():
     def choice(self, label: str, options: list[str], *, default: int = 0, key: str | None = None):
         from argplusplus.console.tui.widgetslib.other import Choice
         t = Choice(label=label, options=options, default=default, key=key)
+        self.steps.append(t)
+        return self
+    
+    def slider(self, label: str, *, min: int = 0, max: int = 100, step: int = 5, default: int = 50, key: str | None = None, transform: Literal["percent", "count", "steps"] | str | None | Callable[[int], None] = "percent"):
+        from argplusplus.console.tui.widgetslib.other import Slider
+        t = Slider(label=label, min=min, max=max, step=step, default=default, key=key, transform=transform)
         self.steps.append(t)
         return self
     

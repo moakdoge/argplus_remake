@@ -80,6 +80,7 @@ def tui():
 
     ), key="properties")  \
     .spacer() \
+    .slider("Percent to build at once", transform="GB") \
     .button(label="Build", callback=lambda tui: (
        tui
        .title("Are you sure you want to build?")

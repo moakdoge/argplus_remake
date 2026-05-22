@@ -21,15 +21,7 @@ class Paragraph(TUIStep):
         l = textwrap.wrap(self._str, width=100)
         l = ["||  " + _ for _ in l]
         return "\r\n".join(l)
-    
-class DebugPrint(TUIStep):
-    def __init__(self, text: str):
-        self._str = text
-    def render(self) -> str:
-        return f"CURSOR: {self.parent.cursor} [bold]{self._str}[/bold]"
-    
-
-        
+          
 class Spacer(TUIStep):
     def render(self) -> str:
         return "\n"
