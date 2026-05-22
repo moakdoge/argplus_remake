@@ -49,6 +49,11 @@ class KeyReader:
             return None
 
         if key != "\x1b":
+            if key == "\n":
+                return "\r"
+            if key == "\r":
+                # Swallow a trailing LF if the terminal sends CRLF.
+                _read_char(fd, 0)
             return key
 
         next_char = _read_char(fd, tm)
@@ -69,6 +74,9 @@ class KeyReader:
                     break
 
         return seq
+
+    def drain(self) -> None:
+        pass
 
     def __iter__(self):
         while True:

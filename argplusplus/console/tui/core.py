@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
-from argplusplus.console.tui.widgetslib.title import Checkbox, Choice, DebugPrint, Submenu, Title, Textbox
+from argplusplus.console.tui.widgetslib.title import Button, Checkbox, Choice, DebugPrint, Password, Submenu, Title, Textbox
 
 
 if TYPE_CHECKING:
@@ -11,9 +11,10 @@ if TYPE_CHECKING:
 class TUI():
     def __init__(self, console: "console.OutputConsole") -> None:
         self.console: "console.OutputConsole" = console
-        self.steps: list[TUIStep] = [DebugPrint("lmao", self)]
+        self.steps: list[TUIStep] = []
         self._line_counter = 0
         self.cursor = 0
+        self._running = True
         
     @property
     def selectable(self) -> list[TUIStep]:
@@ -23,6 +24,8 @@ class TUI():
     def selected(self) -> TUIStep:
         return self.selectable[self.cursor]
     
+    def exit(self):
+        self._running= False
     @selected.setter
     def selected(self, new: TUIStep):
         try:
@@ -50,22 +53,37 @@ class TUI():
             self.console.clear_line()
             self.console.raw_print("\r" + out + "\n", flush=False)
         self.console.flush()
-        
     def build(self):
-        self.draw()
         with self.console.raw:
-            for key in self.console.raw:
-                match key:
-                    case '\x1b[A': #up
-                        self.last_item()
-                    case '\x1b[B': #down
-                        self.next_item()
-                    case '\x1b': #ESC
-                        return
-                    case '\r':
-                        self.selected._selected()
+            while self._running:
                 self.draw()
-        
+
+                key = self.console.raw.readkey()
+
+                if key is False:
+                    raise KeyboardInterrupt
+
+                if key is None:
+                    break
+                self.handle_key(key)
+                if not self._running:
+                    break
+            self.console.raw.drain()
+    def handle_key(self, key):
+        match key:
+            case "\x1b":
+                self._running = False
+
+            case "\r":
+                self.selected._selected()
+                pass
+
+            case "\x1b[A":
+                self.last_item()
+
+            case "\x1b[B":
+                self.next_item()
+                
     def next_item(self):
         if not self.selectable:
             return
@@ -92,8 +110,18 @@ class TUI():
         self.steps.append(t)
         return self
     
+    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | TUI"]):
+        t = Button(label, self, callback)
+        self.steps.append(t)
+        return self
+    
     def textbox(self, option: str, *, default: str = ""):
         t = Textbox(option, self, default)
+        self.steps.append(t)
+        return self
+    
+    def password(self, option: str, *, symbol="*"):
+        t = Password(option, self, symbol)
         self.steps.append(t)
         return self
     
@@ -102,7 +130,7 @@ class TUI():
         self.steps.append(t)
         return self
     
-    def submenu(self, label: str, menu: Callable[["TUI"], None]):
+    def submenu(self, label: str, menu: Callable[["TUI"], "None | TUI"]):
         t = Submenu(label, self, menu)
         self.steps.append(t)
         return self

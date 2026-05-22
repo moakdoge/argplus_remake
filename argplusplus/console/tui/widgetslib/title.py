@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Callable
 
 from argplusplus.console.tui.tui_obj import TUIStep
@@ -30,6 +31,34 @@ class Checkbox(TUIStep):
     def _selected(self):
         self._state = not self._state    
         
+class Button(TUIStep):
+    selectable = True
+    def __init__(self, option: str, parent: "TUI", callback: Callable[["TUI"], "None | bool | TUI"]):
+        self._str = option
+        self._parent = parent
+        self._callback = callback
+    def render(self) -> str:
+        return f"({self._str})"
+    
+    def _selected(self):
+        from argplusplus.console.tui.core import TUI
+        child=TUI(self._parent.console)
+        o = self._callback(child)
+        if o is False:
+            return
+        if o is True:
+            self._parent.exit()
+            self._parent.console.clear()
+            self._parent.console.raw.drain()
+            return
+        try:
+            if isinstance(o, TUI):
+                child.build()
+        finally:
+            self._parent.console.clear()
+        self._parent.console.raw.drain()
+        self._parent.draw()
+        
 class Textbox(TUIStep):
     selectable = True
     def __init__(self, option: str, parent: "TUI", default: str = ""):
@@ -41,6 +70,32 @@ class Textbox(TUIStep):
     def _selected(self):
         try:
             for key in self._parent.console.raw:
+                if key.startswith("\x1b["):
+                    continue
+                match key:
+                    case '\x7f':
+                        self._text = self._text[:-1]
+                    case '\r':
+                        break
+                    case _:
+                        self._text += key
+                self._parent.draw()
+        except KeyboardInterrupt as e:
+            pass
+class Password(TUIStep):
+    selectable = True
+    def __init__(self, option: str, parent: "TUI", symbol: str = "*"):
+        self._str = option
+        self._parent = parent
+        self._text = ""
+        self._sym = symbol
+    def render(self) -> str:
+        return f"{self._str}: [{self._sym * len(self._text)}]"
+    def _selected(self):
+        try:
+            for key in self._parent.console.raw:
+                if key.startswith("\x1b["):
+                    continue
                 match key:
                     case '\x7f':
                         self._text = self._text[:-1]
@@ -99,7 +154,7 @@ class Submenu(TUIStep):
         self,
         label: str,
         parent: "TUI",
-        builder: Callable[["TUI"], None],
+        builder: Callable[["TUI"], "None | TUI"],
     ):
         self._str = label
         self._parent = parent
@@ -108,14 +163,27 @@ class Submenu(TUIStep):
     def render(self) -> str:
         return f"{self._str} >"
 
+
+    @cached_property
+    def child(self):
+        from argplusplus.console.tui.core import TUI
+        child=TUI(self._parent.console)
+        o=self._builder(child)
+        return child, o
+    
     def _selected(self):
         from argplusplus.console.tui.core import TUI
-        child = TUI(self._parent.console)
-        self._builder(child)
-
-
         try:
-            child.build()
+        
+            child, o = self.child
+            child._running = True
+            # Clear any buffered key so the child doesn't immediately exit.
+            self._parent.console.raw.drain()
+            if isinstance(o, TUI):
+                child.build()
+                
         finally:
             self._parent.console.clear()
+            
+        self._parent.console.raw.drain()
         self._parent.draw()

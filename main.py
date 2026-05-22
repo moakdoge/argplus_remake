@@ -62,7 +62,7 @@ def checkbox():
     opt = manager.console.checkbox({"Option 1": False, "Option 2": True})
     print(f"Chose: {opt}")
     
-@input.register("tui")
+@manager.root()
 def tui():
     obj = TUI(manager.console) \
     .title("Hello, world!") \
@@ -70,12 +70,20 @@ def tui():
     .checkbox(option="Option 2") \
     .textbox(option="hi", default="example") \
     .choice(label="Optimizations",options=["-O", "-O2", "-O3"]) \
+    .button(label="print hello world", callback=lambda tui: (
+       tui
+       .title("Are you sure you want to progress?")
+        .button("YES", callback=lambda t: True)
+        .button("NO", callback=lambda t: True)
+
+    )) \
     .submenu(label="Testing submenu", menu=lambda tui: (
         tui
         .title("Test") 
         .textbox("Choose a name!")
         .checkbox("Would you like to save?")
-        .build()   
+        .password("Please log in.")
+
     )) 
     obj.build()
     
