@@ -78,7 +78,9 @@ class Textbox(TUIStep):
         return f"{self._str}: [{before}{cursor}{after}]"
     def _selected(self):
         self._is_editing = True
+        start = self._text
         try:
+            self._parent.draw()
             for key in self._parent.console.raw:
                 if key.startswith("\x1b["):
                     match key:
@@ -95,6 +97,9 @@ class Textbox(TUIStep):
                             self._text = self._text[:self._cursor_pos - 1] + self._text[self._cursor_pos:]
                             self._cursor_pos -= 1
                     case '\r':
+                        break
+                    case '\x1b':
+                        self._text = start
                         break
                     case _:
                         self._text = self._text[:self._cursor_pos] + key + self._text[self._cursor_pos:]

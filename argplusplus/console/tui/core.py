@@ -55,6 +55,13 @@ class TUI():
         self.console.flush()
     def build(self):
         with self.console.raw:
+            # Highlight the initially selected item
+            if self.selectable:
+                try:
+                    self.selectable[0]._hover()
+                except NotImplementedError:
+                    pass
+            
             while self._running:
                 self.draw()
 
