@@ -33,21 +33,25 @@ class DebugPrint(TUIStep):
     
 class Checkbox(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", state: bool = False):
+    def __init__(self, option: str, parent: "TUI", state: bool = False, key: str | None = None):
         self._str = option
         self._parent = parent
         self._state = state
+        self.key = key
     def render(self) -> str:
         return f"{self._str}: {"([green]●[/green])" if self._state else "([red]●[/red])"}"
     def _selected(self):
-        self._state = not self._state    
+        self._state = not self._state
+    def value(self) -> Any:
+        return self._state    
         
 class Button(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", callback: Callable[["TUI"], "None | int | bool | TUI"]):
+    def __init__(self, option: str, parent: "TUI", callback: Callable[["TUI"], "None | int | bool | TUI"], key: str | None = None):
         self._str = option
         self._parent = parent
         self._callback = callback
+        self.key = key
     def render(self) -> str:
         return f"({self._str})"
     
@@ -86,13 +90,16 @@ class Button(TUIStep):
         
 class Textbox(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", default: str = "", placeholder: str = "Type things here..."):
+    def __init__(self, option: str, parent: "TUI", default: str = "", placeholder: str = "Type things here...", key: str | None = None):
         self._str = option
         self._parent = parent
         self._text = default
         self._cursor_pos = len(default)
         self._is_editing = False
         self._placeholder = placeholder
+        self.key = key
+    def value(self) -> Any:
+        return self._text
     def render(self) -> str:
         # Only show cursor when actively editing
         if not self._is_editing:
@@ -140,12 +147,15 @@ class Textbox(TUIStep):
             self._is_editing = False
 class Password(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", symbol: str = "*", placeholder: str = "Password here..."):
+    def __init__(self, option: str, parent: "TUI", symbol: str = "*", placeholder: str = "Password here...", key: str | None = None):
         self._str = option
         self._parent = parent
         self._text = ""
         self._sym = symbol
         self._placeholder = placeholder
+        self.key = key
+    def value(self) -> Any:
+        return self._text
     def render(self) -> str:
         if stringutils.is_blank(self._text):
             f=self._parent.console.format(f"[gray]{self._placeholder}[/gray]")
@@ -170,11 +180,14 @@ class Password(TUIStep):
 
 class Choice(TUIStep):
     selectable = True
-    def __init__(self, label: str, parent: "TUI", options: list[str], default: int = 0):
+    def __init__(self, label: str, parent: "TUI", options: list[str], default: int = 0, key: str | None = None):
         self._str = label
         self._parent = parent
         self._options = options
         self._ind = default
+        self.key = key
+    def value(self) -> Any:
+        return self._options[self._ind]
     def render(self) -> str:
         return f"{self._str}: ({self._options[self._ind]})"
     def _selected(self):
@@ -232,10 +245,12 @@ class Submenu(TUIStep):
         label: str,
         parent: "TUI",
         builder: Callable[["TUI"], "None | TUI"],
+        key: str | None = None,
     ):
         self._str = label
         self._parent = parent
         self._builder = builder
+        self.key = key
 
     def render(self) -> str:
         return f"{self._str} ▶"
@@ -265,6 +280,10 @@ class Submenu(TUIStep):
             
         self._parent.console.raw.drain()
         self._parent.draw()
+        
+    def value(self):
+        child, o = self.child
+        return child.get_values()
         
 class Spacer(TUIStep):
     def render(self) -> str:

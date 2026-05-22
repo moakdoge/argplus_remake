@@ -353,7 +353,7 @@ class _Url(_BaseTag):
 
     def get(self, closing: str | None = None) -> tuple[str, str]:
         if closing:
-            return "", f"[underline][blue]\033]8;;{closing}\033\\{closing}\033]8;;\033\\[/underline][/blue]"
+            return "", f"[underline][blue]\033]8;;{closing}\033\\{closing}\033]8;;\033\\\0[/blue][/underline]"
         return "", ""
 
 @dataclass

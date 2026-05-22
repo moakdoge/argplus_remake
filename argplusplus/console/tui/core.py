@@ -110,6 +110,17 @@ class TUI():
         current_ind = self.selectable.index(self.selected)
         if current_ind > 0:
             self.selected = self.selectable[current_ind - 1]
+    
+    def get_values(self) -> dict:
+        """Get all values from widgets with keys set"""
+        values = {}
+        for step in self.steps:
+            if hasattr(step, 'key') and step.key is not None:
+                if hasattr(step, 'value'):
+                    if stringutils.is_blank(step.key):
+                        continue
+                    values[step.key] = step.value()
+        return values
         
     
         
@@ -122,33 +133,33 @@ class TUI():
         self.steps.append(t)
         return self
     
-    def checkbox(self, option: str, *, state: bool = False):
-        t = Checkbox(option, self, state=state)
+    def checkbox(self, option: str, *, state: bool = False, key: str | None = None):
+        t = Checkbox(option, self, state=state, key=key)
         self.steps.append(t)
         return self
     
-    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | int | TUI"]):
-        t = Button(label, self, callback)
+    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | int | TUI"], key: str | None = None):
+        t = Button(label, self, callback, key=key)
         self.steps.append(t)
         return self
     
-    def textbox(self, option: str, *, default: str = ""):
-        t = Textbox(option, self, default)
+    def textbox(self, option: str, *, default: str = "", key: str | None = None):
+        t = Textbox(option, self, default, key=key)
         self.steps.append(t)
         return self
     
-    def password(self, option: str, *, symbol="*"):
-        t = Password(option, self, symbol)
+    def password(self, option: str, *, symbol="*", key: str | None = None):
+        t = Password(option, self, symbol, key=key)
         self.steps.append(t)
         return self
     
-    def choice(self, label: str, options: list[str], *, default: int = 0):
-        t = Choice(label=label, parent=self, options=options, default=default)
+    def choice(self, label: str, options: list[str], *, default: int = 0, key: str | None = None):
+        t = Choice(label=label, parent=self, options=options, default=default, key=key)
         self.steps.append(t)
         return self
     
-    def submenu(self, label: str, menu: Callable[["TUI"], "None | TUI"]):
-        t = Submenu(label, self, menu)
+    def submenu(self, label: str, menu: Callable[["TUI"], "None | TUI"], key: str | None = None):
+        t = Submenu(label, self, menu, key=key)
         self.steps.append(t)
         return self
     

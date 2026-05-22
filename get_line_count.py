@@ -12,6 +12,15 @@ def get_files() -> list[Path]:
 
 lines = 0
 for file in get_files():
-    l=len(file.read_text().splitlines())
+    _ = []
+    embedded_quote = False
+    for i in file.read_text().splitlines():
+        if i.replace(" ", "").strip("\t").strip("\n") == "":
+            continue
+        if i.startswith("#"):
+            continue
+
+        _.append(i)
+    l=len(_)
     lines += l
 print("total lines:",lines)

@@ -66,24 +66,24 @@ def checkbox():
 def tui():
     obj = TUI(manager.console) \
     .title("Settings") \
-    .checkbox("Create .gitignore", state=True) \
-    .checkbox(option="Save Raw") \
+    .checkbox("Create .gitignore", state=True, key="gitignore") \
+    .checkbox(option="Save Raw", key="saveraw") \
     .spacer() \
     .title("Other") \
-    .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"]) \
+    .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"], key="comp_opt") \
     .submenu(label="Properties", menu=lambda tui: (
         tui
         .title("Properties") 
-        .textbox("Name")
-        .checkbox("Modern")
-        .password("Secret")
+        .textbox("Name", key="name")
+        .checkbox("Modern", key="modern")
+        .password("Secret", key="secret")
 
-    ))  \
+    ), key="properties")  \
     .spacer() \
     .button(label="Build", callback=lambda tui: (
        tui
        .title("Are you sure you want to build?")
-       .paragraph("Building may take over 10 minutes. Please make sure to not power off or unplug your PC. To see more, check <url>")
+       .paragraph("Building may take over 10 minutes. Please make sure to not power off or unplug your PC. To see more, check [link]https://google.com[/link]")
         .button("YES", callback=lambda t: (
             t.title("Built successfully!") 
             .button("Back", callback=lambda t: t.back(2))
@@ -93,5 +93,8 @@ def tui():
     )) 
 
     obj.build()
+    
+    values = obj.get_values()
+    manager.console.print(str(values))
     
 manager.process()

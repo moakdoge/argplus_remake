@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 class TUIStep():
     selectable: bool = False
     _parent: "TUI"
+    key = ""
     _bold: bool = False
     def __init__(self, parent: "TUI") -> None:
         self._parent = parent
@@ -31,4 +32,8 @@ class TUIStep():
         
     def _selected(self):
         '''Called when the object is selected'''
+        pass
+    
+    def value(self) -> Any:
+        '''The value of this;'''
         pass
