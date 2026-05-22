@@ -25,37 +25,50 @@ class KeyReader:
 
         return False
 
-    def readkey(self):
+    def readkey(self) -> str | None:
+        import select, os
+        tm = 0.02 #time between esc 
+
+        def _read_char(fd: int, timeout: float | None = None) -> str | None:
+            if timeout is not None:
+                ready, _, _ = select.select([fd], [], [], timeout)
+                if not ready:
+                    return None
+
+            data = os.read(fd, 1)
+            return data.decode(errors="ignore") if data else None
+
         if not self.stdin.isatty():
             ch = self.stdin.read(1)
             return ch if ch else None
 
-        key = self.stdin.read(1)
+        fd = self.stdin.fileno()
+        key = _read_char(fd)
 
-        if key == "\x03":
-            return False
+        if key == "\x03": #CTRL + C
+            return None
 
-        if key == "\x1b":
-            seq = key
-            next_char = self.stdin.read(1)
+        if key != "\x1b":
+            return key
 
-            if next_char:
-                seq += next_char
+        next_char = _read_char(fd, tm)
+        if next_char is None:
+            return "\x1b"
 
-                if next_char == "[":
-                    while True:
-                        char = self.stdin.read(1)
-                        if not char:
-                            break
+        seq = "\x1b" + next_char
 
-                        seq += char
+        if next_char == "[":
+            while True:
+                char = _read_char(fd, tm)
+                if char is None:
+                    break
 
-                        if "@" <= char <= "~":
-                            break
+                seq += char
 
-            return seq
+                if "@" <= char <= "~":
+                    break
 
-        return key
+        return seq
 
     def __iter__(self):
         while True:
@@ -63,5 +76,6 @@ class KeyReader:
 
             if key is False or key is None:
                 raise KeyboardInterrupt
-
+            
+            
             yield key

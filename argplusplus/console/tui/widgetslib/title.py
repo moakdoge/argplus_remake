@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from argplusplus.console.tui.tui_obj import TUIStep
 
@@ -90,3 +90,32 @@ class Choice(TUIStep):
                 
         except KeyboardInterrupt as e:
             pass
+
+
+class Submenu(TUIStep):
+    selectable = True
+
+    def __init__(
+        self,
+        label: str,
+        parent: "TUI",
+        builder: Callable[["TUI"], None],
+    ):
+        self._str = label
+        self._parent = parent
+        self._builder = builder
+
+    def render(self) -> str:
+        return f"{self._str} >"
+
+    def _selected(self):
+        from argplusplus.console.tui.core import TUI
+        child = TUI(self._parent.console)
+        self._builder(child)
+
+
+        try:
+            child.build()
+        finally:
+            self._parent.console.clear()
+        self._parent.draw()

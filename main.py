@@ -69,7 +69,14 @@ def tui():
     .checkbox("Option 1", state=True) \
     .checkbox(option="Option 2") \
     .textbox(option="hi", default="example") \
-    .choice(label="Optimizations",options=["-O", "-O2", "-O3"])
+    .choice(label="Optimizations",options=["-O", "-O2", "-O3"]) \
+    .submenu(label="Testing submenu", menu=lambda tui: (
+        tui
+        .title("Test") 
+        .textbox("Choose a name!")
+        .checkbox("Would you like to save?")
+        .build()   
+    )) 
     obj.build()
     
 manager.process()

@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Callable, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
-from argplusplus.console.tui.widgetslib.title import Checkbox, Choice, DebugPrint, Title, Textbox
+from argplusplus.console.tui.widgetslib.title import Checkbox, Choice, DebugPrint, Submenu, Title, Textbox
 
 
 if TYPE_CHECKING:
@@ -55,13 +55,14 @@ class TUI():
         self.draw()
         with self.console.raw:
             for key in self.console.raw:
-                
-                match key.encode():
-                    case b'\x1b[A': #up
+                match key:
+                    case '\x1b[A': #up
                         self.last_item()
-                    case b'\x1b[B': #down
+                    case '\x1b[B': #down
                         self.next_item()
-                    case b'\r':
+                    case '\x1b': #ESC
+                        return
+                    case '\r':
                         self.selected._selected()
                 self.draw()
         
@@ -98,5 +99,10 @@ class TUI():
     
     def choice(self, label: str, options: list[str], *, default: int = 0):
         t = Choice(label=label, parent=self, options=options, default=default)
+        self.steps.append(t)
+        return self
+    
+    def submenu(self, label: str, menu: Callable[["TUI"], None]):
+        t = Submenu(label, self, menu)
         self.steps.append(t)
         return self
