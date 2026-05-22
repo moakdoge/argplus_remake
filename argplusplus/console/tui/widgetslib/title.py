@@ -65,23 +65,45 @@ class Textbox(TUIStep):
         self._str = option
         self._parent = parent
         self._text = default
+        self._cursor_pos = len(default)
+        self._is_editing = False
     def render(self) -> str:
-        return f"{self._str}: [{self._text}]"
+        # Only show cursor when actively editing
+        if not self._is_editing:
+            return f"{self._str}: [{self._text}]"
+        
+        before = self._text[:self._cursor_pos]
+        after = self._text[self._cursor_pos:]
+        cursor = "│"  # Vertical bar cursor
+        return f"{self._str}: [{before}{cursor}{after}]"
     def _selected(self):
+        self._is_editing = True
         try:
             for key in self._parent.console.raw:
                 if key.startswith("\x1b["):
+                    match key:
+                        case '\x1b[D':  # left arrow
+                            self._cursor_pos = max(0, self._cursor_pos - 1)
+                            self._parent.draw()
+                        case '\x1b[C':  # right arrow
+                            self._cursor_pos = min(len(self._text), self._cursor_pos + 1)
+                            self._parent.draw()
                     continue
                 match key:
-                    case '\x7f':
-                        self._text = self._text[:-1]
+                    case '\x7f':  # backspace
+                        if self._cursor_pos > 0:
+                            self._text = self._text[:self._cursor_pos - 1] + self._text[self._cursor_pos:]
+                            self._cursor_pos -= 1
                     case '\r':
                         break
                     case _:
-                        self._text += key
+                        self._text = self._text[:self._cursor_pos] + key + self._text[self._cursor_pos:]
+                        self._cursor_pos += 1
                 self._parent.draw()
         except KeyboardInterrupt as e:
             pass
+        finally:
+            self._is_editing = False
 class Password(TUIStep):
     selectable = True
     def __init__(self, option: str, parent: "TUI", symbol: str = "*"):
@@ -118,6 +140,7 @@ class Choice(TUIStep):
         return f"{self._str}: ({self._options[self._ind]})"
     def _selected(self):
         console = self._parent.console
+        orig = self._ind
         def _draw():
             console.clear()
             for i, opt in enumerate(self._options):
@@ -132,6 +155,9 @@ class Choice(TUIStep):
                     case '\x7f':
                         break
                     case '\r':
+                        break
+                    case '\x1b': #esc
+                        self._ind = orig
                         break
                     case '\x1b[A': #up
                         self._ind -= 1

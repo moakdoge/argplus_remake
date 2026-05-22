@@ -101,6 +101,10 @@ def _find_tags(text: str) -> list[_Tag]:
 
     for start, end, full in iter_tag_spans(text):
         inner = full[1:-1]
+        
+        # Skip ANSI escape sequences (incomplete tags like [4m, [24m, [4;24m, etc.)
+        if '\x1b' in full or (inner and (inner[0].isdigit() or inner.split(';')[0].isdigit())):
+            continue
 
         closing = inner.startswith("/")
         if closing:

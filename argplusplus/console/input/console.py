@@ -184,8 +184,8 @@ class OutputConsole:
             else:
                 return f"[cyan]{text}[/cyan]"
 
-        result = re.sub(pattern, repl, text)
-        return clr.process_tags(result)
+        #result = re.sub(pattern, repl, text)
+        return clr.process_tags(text)
 
     def pprint(self, pretty_text: str, end: str | None = None):
         self.print(self.format(pretty_text), end=end)
