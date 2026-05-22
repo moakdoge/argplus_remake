@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
-from argplusplus.console.tui.widgetslib.title import Button, Checkbox, Choice, DebugPrint, Password, Submenu, Title, Textbox
+from argplusplus.console.tui.widgetslib.title import Button, Checkbox, Choice, DebugPrint, Paragraph, Password, Spacer, Submenu, Title, Textbox
 
 
 if TYPE_CHECKING:
@@ -15,6 +15,7 @@ class TUI():
         self._line_counter = 0
         self.cursor = 0
         self._running = True
+        self._parent: "None | TUIStep" = None
         
     @property
     def selectable(self) -> list[TUIStep]:
@@ -43,6 +44,7 @@ class TUI():
         if self.selectable and self.cursor >= len(self.selectable):
             self.cursor = 0
         self.console.clear()
+        self.console.hide_cursor()
         self.console.move_cursor(lines=-self._line_counter)
         self._line_counter = 0
         for step in self.steps:
@@ -55,8 +57,8 @@ class TUI():
         self.console.flush()
     def build(self):
         with self.console.raw:
-            # Highlight the initially selected item
-            if self.selectable:
+            # Highlight the initially selected item (only if user hasn't set it manually)
+            if self.selectable and self.cursor == 0:
                 try:
                     self.selectable[0]._hover()
                 except NotImplementedError:
@@ -76,6 +78,7 @@ class TUI():
                 if not self._running:
                     break
             self.console.raw.drain()
+        self.console.show_cursor()
     def handle_key(self, key):
         match key:
             case "\x1b":
@@ -91,6 +94,9 @@ class TUI():
             case "\x1b[B":
                 self.next_item()
                 
+    def back(self, amount: int = 1):
+        return amount 
+    
     def next_item(self):
         if not self.selectable:
             return
@@ -111,13 +117,17 @@ class TUI():
         t = Title(title,parent=self)
         self.steps.append(t)
         return self
+    def paragraph(self, content: str) -> Self:
+        t = Paragraph(content,parent=self)
+        self.steps.append(t)
+        return self
     
     def checkbox(self, option: str, *, state: bool = False):
         t = Checkbox(option, self, state=state)
         self.steps.append(t)
         return self
     
-    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | TUI"]):
+    def button(self, label: str, *, callback: Callable[["TUI"], "None | bool | int | TUI"]):
         t = Button(label, self, callback)
         self.steps.append(t)
         return self
@@ -141,3 +151,10 @@ class TUI():
         t = Submenu(label, self, menu)
         self.steps.append(t)
         return self
+    
+    def spacer(self):
+        t = Spacer(self)
+        self.steps.append(t)
+        return self
+    
+    

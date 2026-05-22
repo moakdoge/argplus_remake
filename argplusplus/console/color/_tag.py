@@ -356,5 +356,19 @@ class _Url(_BaseTag):
             return "", f"[underline][blue]\033]8;;{closing}\033\\{closing}\033]8;;\033\\[/underline][/blue]"
         return "", ""
 
+@dataclass
+class _Literal(_BaseTag):
+    command: str = "literal"
+    @classmethod
+    def valid(cls, input: str) -> bool:
+        return super().valid(input)
+
+    def get(self, closing: str | None = None) -> str:
+        # Return the closing text with double brackets converted to single
+        if closing:
+            # Replace [[ with [ and ]] with ]
+            return closing.replace("[[", "[").replace("]]", "]")
+        return ""
+
 TAG_TYPES: list[type[_BaseTag]] = _BaseTag.__subclasses__()
 TAG_TYPES.append(_Tag) # type: ignore

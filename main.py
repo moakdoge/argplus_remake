@@ -65,26 +65,33 @@ def checkbox():
 @manager.root()
 def tui():
     obj = TUI(manager.console) \
-    .title("Hello, world!") \
-    .checkbox("Option 1", state=True) \
-    .checkbox(option="Option 2") \
-    .textbox(option="hi", default="example") \
-    .choice(label="Optimizations",options=["-O", "-O2", "-O3"]) \
-    .button(label="print hello world", callback=lambda tui: (
-       tui
-       .title("Are you sure you want to progress?")
-        .button("YES", callback=lambda t: True)
-        .button("NO", callback=lambda t: True)
-
-    )) \
-    .submenu(label="Testing submenu", menu=lambda tui: (
+    .title("Settings") \
+    .checkbox("Create .gitignore", state=True) \
+    .checkbox(option="Save Raw") \
+    .spacer() \
+    .title("Other") \
+    .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"]) \
+    .submenu(label="Properties", menu=lambda tui: (
         tui
-        .title("Test") 
-        .textbox("Choose a name!")
-        .checkbox("Would you like to save?")
-        .password("Please log in.")
+        .title("Properties") 
+        .textbox("Name")
+        .checkbox("Modern")
+        .password("Secret")
+
+    ))  \
+    .spacer() \
+    .button(label="Build", callback=lambda tui: (
+       tui
+       .title("Are you sure you want to build?")
+       .paragraph("Building may take over 10 minutes. Please make sure to not power off or unplug your PC. To see more, check <url>")
+        .button("YES", callback=lambda t: (
+            t.title("Built successfully!") 
+            .button("Back", callback=lambda t: t.back(2))
+        ))
+        .button("NO", callback=lambda t: t.back(1))
 
     )) 
+
     obj.build()
     
 manager.process()

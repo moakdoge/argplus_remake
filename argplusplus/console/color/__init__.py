@@ -16,7 +16,12 @@ COLORS = [
     _FormattingColor("magenta", "\033[35m", "\033[45m", "magenta"),
     _FormattingColor("cyan", "\033[36m", "\033[46m", "cyan"),
     _FormattingColor("white", "\033[37m", "\033[47m", "white"),
-
+    _FormattingColor("gray", "\033[90m", "\033[100m", "gray"),
+    _FormattingColor("grey", "\033[90m", "\033[100m", "grey"),  # alias
+    _FormattingColor("light_gray", "\033[37m", "\033[47m", "light_gray"),
+    _FormattingColor("light_grey", "\033[37m", "\033[47m", "light_grey"),
+    _FormattingColor("dark_gray", "\033[90m", "\033[100m", "dark_gray"),
+    _FormattingColor("dark_grey", "\033[90m", "\033[100m", "dark_grey"),
     # Bright
     _FormattingColor("bright_black", "\033[90m", "\033[100m", "bright_black"),
     _FormattingColor("bright_red", "\033[91m", "\033[101m", "bright_red"),
@@ -101,8 +106,8 @@ def _find_tags(text: str) -> list[_Tag]:
 
     for start, end, full in iter_tag_spans(text):
         inner = full[1:-1]
-        
-        # Skip ANSI escape sequences (incomplete tags like [4m, [24m, [4;24m, etc.)
+
+        # Skip ANSI escape sequences (incomplete tags like [4m, [24m, etc.)
         if '\x1b' in full or (inner and (inner[0].isdigit() or inner.split(';')[0].isdigit())):
             continue
 
@@ -153,6 +158,12 @@ def _find_last_visible_chunk(parts: list[str]) -> tuple[int | None, str]:
     return None, ""
 
 def process_tags(st: str) -> str:
+    # Preprocess: replace escaped brackets with placeholders
+    ESCAPED_OPEN = "\uFFF2"
+    ESCAPED_CLOSE = "\uFFF3"
+    st_processed = st.replace("\\[", ESCAPED_OPEN)
+    st_processed = st_processed.replace("\\]", ESCAPED_CLOSE)
+    
     saved = []
     PLACEHOLER_LEFT=str(secrets.token_hex(6))
     PLACEHOLER_RIGHT=str(secrets.token_hex(6))
@@ -161,8 +172,8 @@ def process_tags(st: str) -> str:
         saved.append(f"[{m.group(1)}]")
         return f"{PLACEHOLER_LEFT*(len(left)-1)}{inner}{PLACEHOLER_RIGHT*(len(right)-1)}"
 
-    st = ESC.sub(repl, st)
-    tags = _find_tags(st)
+    st_processed = ESC.sub(repl, st_processed)
+    tags = _find_tags(st_processed)
     out: list[str] = []
     last = 0
     open_clrs: list[_FormattingColor] = []
@@ -177,7 +188,7 @@ def process_tags(st: str) -> str:
         if isinstance(tag, _While) and not tag.closing:
             tag._tag_index = i
             while_stack.append(tag)
-        out.append(st[last:tag.start])
+        out.append(st_processed[last:tag.start])
         last = tag.end
         if tag.closing:
             if hasattr(tag, "get") and not tag.__class__ is _Tag:
@@ -230,7 +241,7 @@ def process_tags(st: str) -> str:
             continue
         clr = _find_color(tag.name)
         if not clr:
-            out.append(st[tag.start:tag.end])
+            out.append(st_processed[tag.start:tag.end])
             i+=1
             continue
 
@@ -238,5 +249,8 @@ def process_tags(st: str) -> str:
         clr.force_bg = tag.background
         out.append(clr.get())
         i+=1
-    out.append(st[last:])
-    return "".join(out).replace(PLACEHOLER_LEFT, "[").replace(PLACEHOLER_RIGHT, "]")
+    out.append(st_processed[last:])
+    result = "".join(out).replace(PLACEHOLER_LEFT, "[").replace(PLACEHOLER_RIGHT, "]")
+    # Restore escaped brackets
+    result = result.replace(ESCAPED_OPEN, "[").replace(ESCAPED_CLOSE, "]")
+    return result

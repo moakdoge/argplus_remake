@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Callable
 
+from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
 
 if TYPE_CHECKING:
@@ -11,7 +12,17 @@ class Title(TUIStep):
         self._str = text
         self._parent = parent
     def render(self) -> str:
-        return f"[bold]{self._str}[/bold]"
+        return f"━━━━ {self._str} ━━━━"
+    
+class Paragraph(TUIStep):
+    def __init__(self, text: str, parent: "TUI"):
+        self._str = text
+        self._parent = parent
+    def render(self) -> str:
+        import textwrap
+        l = textwrap.wrap(self._str, width=100)
+        l = ["||  " + _ for _ in l]
+        return "\r\n".join(l)
     
 class DebugPrint(TUIStep):
     def __init__(self, text: str, parent: "TUI"):
@@ -27,13 +38,13 @@ class Checkbox(TUIStep):
         self._parent = parent
         self._state = state
     def render(self) -> str:
-        return f"{self._str}: {"([green]x[/green])" if self._state else "[red]()[/red]"}"
+        return f"{self._str}: {"([green]●[/green])" if self._state else "([red]●[/red])"}"
     def _selected(self):
         self._state = not self._state    
         
 class Button(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", callback: Callable[["TUI"], "None | bool | TUI"]):
+    def __init__(self, option: str, parent: "TUI", callback: Callable[["TUI"], "None | int | bool | TUI"]):
         self._str = option
         self._parent = parent
         self._callback = callback
@@ -43,6 +54,7 @@ class Button(TUIStep):
     def _selected(self):
         from argplusplus.console.tui.core import TUI
         child=TUI(self._parent.console)
+        child._parent = self._parent  # type: ignore
         o = self._callback(child)
         if o is False:
             return
@@ -51,6 +63,19 @@ class Button(TUIStep):
             self._parent.console.clear()
             self._parent.console.raw.drain()
             return
+        
+        if isinstance(o, int):
+            # Exit n levels based on int return value
+            levels = o
+            current = self._parent
+            while levels > 0 and current:
+                current.exit()
+                current = current._parent
+                levels -= 1
+            self._parent.console.clear()
+            self._parent.console.raw.drain()
+            return
+        
         try:
             if isinstance(o, TUI):
                 child.build()
@@ -61,16 +86,20 @@ class Button(TUIStep):
         
 class Textbox(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", default: str = ""):
+    def __init__(self, option: str, parent: "TUI", default: str = "", placeholder: str = "Type things here..."):
         self._str = option
         self._parent = parent
         self._text = default
         self._cursor_pos = len(default)
         self._is_editing = False
+        self._placeholder = placeholder
     def render(self) -> str:
         # Only show cursor when actively editing
         if not self._is_editing:
-            return f"{self._str}: [{self._text}]"
+            if stringutils.is_blank(self._text):
+                f=self._parent.console.format(f"[gray]{self._placeholder}[/gray]")
+                return f"{self._str}:  [{f}]"
+            return f"{self._str}: {{{self._text}}}"
         
         before = self._text[:self._cursor_pos]
         after = self._text[self._cursor_pos:]
@@ -111,13 +140,18 @@ class Textbox(TUIStep):
             self._is_editing = False
 class Password(TUIStep):
     selectable = True
-    def __init__(self, option: str, parent: "TUI", symbol: str = "*"):
+    def __init__(self, option: str, parent: "TUI", symbol: str = "*", placeholder: str = "Password here..."):
         self._str = option
         self._parent = parent
         self._text = ""
         self._sym = symbol
+        self._placeholder = placeholder
     def render(self) -> str:
+        if stringutils.is_blank(self._text):
+            f=self._parent.console.format(f"[gray]{self._placeholder}[/gray]")
+            return f"{self._str}:  [{f}]"
         return f"{self._str}: [{self._sym * len(self._text)}]"
+    
     def _selected(self):
         try:
             for key in self._parent.console.raw:
@@ -144,15 +178,29 @@ class Choice(TUIStep):
     def render(self) -> str:
         return f"{self._str}: ({self._options[self._ind]})"
     def _selected(self):
+        from argplusplus.console.tui.core import TUI
+        UI = TUI(self._parent.console)
+        UI.title(self._str)
+        _t = None
+        for i, opt in enumerate(self._options):
+            def fn(t, i=i):
+                self._ind = i
+                return True
+            UI.button(label=opt, callback=fn)
+            if i == self._ind:
+                _t = UI.selectable[-1]
+        if _t:
+            UI.selected = _t
+        UI.build()
         console = self._parent.console
         orig = self._ind
-        def _draw():
+'''        def _draw():
             console.clear()
             for i, opt in enumerate(self._options):
                 frm = console.format(opt)
                 if self._ind == i:
                     frm = console.format(f"[bold]{opt}[/bold]")
-                console.print("\r" + frm)
+                console.print("\r" + f"({frm})")
         try:
             _draw()
             for key in self._parent.console.raw:
@@ -173,9 +221,7 @@ class Choice(TUIStep):
                     case _:
                         pass
                 _draw()
-                
-        except KeyboardInterrupt as e:
-            pass
+                '''
 
 
 class Submenu(TUIStep):
@@ -192,13 +238,14 @@ class Submenu(TUIStep):
         self._builder = builder
 
     def render(self) -> str:
-        return f"{self._str} >"
+        return f"{self._str} ▶"
 
 
     @cached_property
     def child(self):
         from argplusplus.console.tui.core import TUI
         child=TUI(self._parent.console)
+        child._parent = self._parent  # type: ignore
         o=self._builder(child)
         return child, o
     
@@ -218,3 +265,7 @@ class Submenu(TUIStep):
             
         self._parent.console.raw.drain()
         self._parent.draw()
+        
+class Spacer(TUIStep):
+    def render(self) -> str:
+        return "\n"

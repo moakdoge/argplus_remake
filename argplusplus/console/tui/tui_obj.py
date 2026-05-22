@@ -10,12 +10,15 @@ class TUIStep():
     selectable: bool = False
     _parent: "TUI"
     _bold: bool = False
+    def __init__(self, parent: "TUI") -> None:
+        self._parent = parent
+        
     def render(self) -> str:
         raise NotImplementedError
     
     def _render(self) -> str:
         if self._bold:
-            return f"[bold]{self.render()}[/bold]"
+            return f"> {self.render()}"
         return self.render()
     
     def _hover(self):
