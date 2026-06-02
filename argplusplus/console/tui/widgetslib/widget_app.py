@@ -41,16 +41,31 @@ class FileExplorer(WidgetApp):
     answer: str = ""
     def _build(self):
         self._current_path = os.path.expanduser(self.starting_path)
+        self.layers = 0
         def assign(base: "TUI"):
             base.title(self._current_path)
             c=0
-            for fi in os.listdir(self._current_path):
+            
+            files=os.listdir(self._current_path)
+            files.insert(0, "..")
+            for fi in files:
                 if os.path.isfile(os.path.join(self._current_path, fi)):
                     continue
-                def _on_press(b: "TUI", path: str = fi):
-                    self._current_path = os.path.join(self._current_path, path)
+                def _on_dpress(b: "TUI", path: str = fi):
+                    self._current_path = os.path.normpath(os.path.join(self._current_path, path))
                     self.base.steps.clear()
+                    if path=="..":
+                        self.layers -= 1
+                    else:
+                        self.layers += 1
                     assign(self.base)
-                base.button(f"[{fi}]", callback=_on_press)
+                base.button(f"[ {fi} ]", callback=_on_dpress)
+            for fi in files:
+                if os.path.isdir(os.path.join(self._current_path, fi)):
+                    continue
+                def _on_press(b: "TUI", path: str = fi):
+                    self.answer = os.path.normpath(os.path.join(self._current_path, path))
+                    return b.back(self.layers + 1)
+                base.button(f"{fi}", callback=_on_press)
             base.build()
         assign(self.base)

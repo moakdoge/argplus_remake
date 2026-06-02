@@ -16,6 +16,7 @@ class TUI():
         self.cursor = 0
         self._running = True
         self.parent: "None | TUIStep" = None
+        self.scroll_line = 0  # Track scroll position in lines, not items
         
     @property
     def selectable(self) -> list[TUIStep]:
@@ -27,6 +28,57 @@ class TUI():
     
     def exit(self):
         self._running= False
+    
+    def _adjust_scroll(self):
+        """Adjust scroll offset to keep the selected item visible"""
+        if not self.selectable or not self.steps:
+            return
+        
+        console_height = self.console.size[0] - 2
+        selected_item = self.selected
+        
+        # Find the position of the selected item in self.steps
+        try:
+            selected_pos = self.steps.index(selected_item)
+        except ValueError:
+            return
+        
+        # Calculate line positions of all items
+        line_pos = 0
+        item_line_starts = {}
+        item_heights = {}
+        
+        for i, step in enumerate(self.steps):
+            item_line_starts[i] = line_pos
+            output = step._render()
+            height = stringutils.linecount(output) + 1
+            item_heights[i] = height
+            line_pos += height
+        
+        # Find the first preceding non-selectable item (like a title) to scroll from
+        scroll_from_pos = selected_pos
+        for i in range(selected_pos - 1, -1, -1):
+            if not self.steps[i].selectable:
+                scroll_from_pos = i
+            else:
+                break
+        
+        # Get the line range - from title to end of selected item
+        scroll_from_start = item_line_starts[scroll_from_pos]
+        selected_height = item_heights[selected_pos]
+        selected_end = item_line_starts[selected_pos] + selected_height
+        
+        # Adjust scroll to keep both title and selected item visible
+        if scroll_from_start < self.scroll_line:
+            self.scroll_line = scroll_from_start
+        elif selected_end > self.scroll_line + console_height:
+            self.scroll_line = selected_end - console_height
+        
+        # Ensure scroll_line doesn't go negative or past the end
+        total_height = sum(item_heights.values())
+        self.scroll_line = max(0, min(self.scroll_line, max(0, total_height - console_height)))
+
+        
         
     @selected.setter
     def selected(self, new: TUIStep):
@@ -44,17 +96,36 @@ class TUI():
     def draw(self):
         if self.selectable and self.cursor >= len(self.selectable):
             self.cursor = 0
+        
+        # Ensure the selected item is visible
+        self._adjust_scroll()
+        
         self.console.clear()
         self.console.hide_cursor()
         self.console.move_cursor(lines=-self._line_counter)
         self._line_counter = 0
+        
+        # Get visible area height (console height minus buffer for safety)
+        console_height = self.console.size[0] - 2
+        
+        # Calculate line positions and render visible items
+        current_line = 0
         for step in self.steps:
             output = step._render()
-            lc = stringutils.linecount(output)
-            self._line_counter += (lc + 1)
-            out=self.console.format(output)
-            self.console.clear_line()
-            self.console.raw_print("\r" + out + "\n", flush=False)
+            lc = stringutils.linecount(output) + 1
+            item_start = current_line
+            item_end = current_line + lc
+            
+            # Check if this item is within the visible area
+            if item_end > self.scroll_line and item_start < self.scroll_line + console_height:
+                # Render this item
+                out = self.console.format(output)
+                self.console.clear_line()
+                self.console.raw_print("\r" + out + "\n", flush=False)
+                self._line_counter += lc
+            
+            current_line += lc
+        
         self.console.flush()
     def build(self):
         for _ in self.steps:
