@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
@@ -25,3 +25,9 @@ class Paragraph(TUIStep):
 class Spacer(TUIStep):
     def render(self) -> str:
         return "\n"
+    
+class Bar(TUIStep):
+    def __init__(self, length: Optional[int] = None) -> None:
+        self._length = length or 16
+    def render(self) -> str:
+        return "━"*self._length

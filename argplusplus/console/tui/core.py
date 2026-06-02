@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, Callable, Literal, Self
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Self
 
 from argplusplus import stringutils
 from argplusplus.console.tui.tui_obj import TUIStep
 
 
-
 if TYPE_CHECKING:
+    from argplusplus.console.tui.widgetslib.widget_app import WidgetApp
     from argplusplus.console.input import console
     
 class TUI():
@@ -27,6 +27,7 @@ class TUI():
     
     def exit(self):
         self._running= False
+        
     @selected.setter
     def selected(self, new: TUIStep):
         try:
@@ -125,6 +126,17 @@ class TUI():
         return values
         
     
+    def full_exit(self) -> Literal[999_999]:
+        '''
+            Used in submenus to close the entire UI; not just the current submenu. 
+            NOTE: This will NOT do anything outside of a submenu lambda. 
+        '''
+        return 999_999
+        
+    def _add_widgetapp(self, app: "WidgetApp"):
+        app._build()
+        self.steps.extend(app.base.steps)
+        del app.base
         
     def title(self, label: str) -> Self:
         from argplusplus.console.tui.widgetslib.text import Title
@@ -186,4 +198,22 @@ class TUI():
         self.steps.append(t)
         return self
     
+    def bar(self, length: Optional[int] = None):
+        from argplusplus.console.tui.widgetslib.text import Bar
+        t = Bar(length)
+        self.steps.append(t)
+        return self
     
+    def message_box(self, title: str, *, key: str | None = None):
+        from argplusplus.console.tui.widgetslib.widget_app import MessageBox, WidgetApp
+        box = MessageBox(title=title, key=key)
+        box._bind(self)
+        self._add_widgetapp(box)
+        return self
+    
+    def file_explorer(self, folder: "str", *, key: str | None = None):
+        from argplusplus.console.tui.widgetslib.widget_app import FileExplorer
+        box = FileExplorer(folder)
+        box._bind(self)
+        self._add_widgetapp(box)
+        return self

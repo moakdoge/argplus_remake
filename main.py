@@ -69,6 +69,8 @@ def tui():
     .checkbox(label="Create .gitignore", checked=True, key="gitignore") \
     .checkbox(label="Save Raw", key="saveraw") \
     .spacer() \
+    .button(label="file explorer test", callback=lambda z: z.file_explorer("~")) \
+    .button(label="test", callback=lambda z: z.message_box("test")) \
     .title(label="Other") \
     .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"], key="comp_opt") \
     .submenu(label="Properties", menu=lambda tui: (
@@ -79,8 +81,9 @@ def tui():
         .password("Secret", key="secret")
 
     ), key="properties")  \
+    .slider("Percent to build at once", transform="percent") \
     .spacer() \
-    .slider("Percent to build at once", transform="GB") \
+    .bar() \
     .button(label="Build", callback=lambda tui: (
        tui
        .title("Are you sure you want to build?")
@@ -88,6 +91,7 @@ def tui():
         .button("YES", callback=lambda t: (
             t.title("Built successfully!") 
             .button("Back", callback=lambda t: t.back(2))
+            .button("Exit", lambda t: t.full_exit())
         ))
         .button("NO", callback=lambda t: t.back(1))
 
