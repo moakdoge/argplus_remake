@@ -69,8 +69,8 @@ def tui():
     .checkbox(label="Create .gitignore", checked=True, key="gitignore") \
     .checkbox(label="Save Raw", key="saveraw") \
     .spacer() \
-    .button(label="file explorer test", callback=lambda z: z.file_explorer("~")) \
-    .button(label="test", callback=lambda z: z.message_box("test")) \
+    .button(label="file explorer test", callback=lambda z: z.file_explorer("~", key="path")) \
+    .button(label="test", callback=lambda z: z.message_box("test", key="wowzers")) \
     .title(label="Other") \
     .choice(label="Compiler Optimization",options=["-O", "-O2", "-O3"], key="comp_opt") \
     .submenu(label="Properties", menu=lambda tui: (

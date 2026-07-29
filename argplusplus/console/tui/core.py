@@ -17,7 +17,7 @@ class TUI():
         self._running = True
         self.parent: "None | TUIStep" = None
         self.scroll_line = 0  # Track scroll position in lines, not items
-        
+        self._widgetapps: list["WidgetApp"] = []
     @property
     def selectable(self) -> list[TUIStep]:
         return [s for s in self.steps if s.selectable]
@@ -194,6 +194,10 @@ class TUI():
                     if stringutils.is_blank(step.key):
                         continue
                     values[step.key] = step.value()
+        for wid in self._widgetapps:
+            print(wid)
+            if hasattr(wid, "answer") and wid.key is not None:
+                values[wid.key] = wid.answer
         return values
         
     
@@ -207,7 +211,7 @@ class TUI():
     def _add_widgetapp(self, app: "WidgetApp"):
         app._build()
         self.steps.extend(app.base.steps)
-        del app.base
+        self._widgetapps.append(app)
         
     def title(self, label: str) -> Self:
         from argplusplus.console.tui.widgetslib.text import Title
@@ -284,7 +288,7 @@ class TUI():
     
     def file_explorer(self, folder: "str", *, key: str | None = None):
         from argplusplus.console.tui.widgetslib.widget_app import FileExplorer
-        box = FileExplorer(folder)
+        box = FileExplorer(folder, key=key)
         box._bind(self)
         self._add_widgetapp(box)
         return self

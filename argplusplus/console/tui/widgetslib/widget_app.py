@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class WidgetApp:
     base: "TUI"
     answer: Any = None
+    key: str | None = None
     def _bind(self, parent: "TUI"):
         self.base = parent
     def _build(self):
@@ -39,6 +40,7 @@ class MessageBox(WidgetApp):
 class FileExplorer(WidgetApp):
     starting_path: str = "~"
     answer: str = ""
+    key: str | None = None
     def _build(self):
         self._current_path = os.path.expanduser(self.starting_path)
         self.layers = 0
